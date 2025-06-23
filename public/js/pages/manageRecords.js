@@ -1,0 +1,385 @@
+/**
+ * VARUNA System - Manage Records (Contracts & Licensees) Script
+ * Current Time: Thursday, June 19, 2025 at 3:15 PM IST
+ * Location: Kalyan, Maharashtra, India
+ */
+document.addEventListener("DOMContentLoaded", function () {
+  const contractsTableEl = document.getElementById("contractsTable");
+  const licenseesTableEl = document.getElementById("licenseesTable");
+  if (!contractsTableEl && !licenseesTableEl) return;
+
+  // --- 1. SETUP ---
+  const editModal = document.getElementById("editRecordModal");
+  const editModalTitle = document.getElementById("editModalTitle");
+  const editModalBody = document.getElementById("editModalBody");
+  let tables = {};
+
+  // --- 2. HELPER FUNCTIONS ---
+
+  // NEW: Reusable function to update all CSRF tokens on the page
+  function refreshToken(newToken) {
+    if (newToken) {
+      document
+        .querySelectorAll('form input[name="csrf_token"]')
+        .forEach((input) => {
+          input.value = newToken;
+        });
+      // Also update the global meta tag if it exists
+      const metaToken = document.querySelector('meta[name="csrf-token"]');
+      if (metaToken) {
+        metaToken.setAttribute("content", newToken);
+      }
+    }
+  }
+
+  function renderActions(row, tableInfo) {
+    const id = row[tableInfo.id_column];
+    let buttons = `<button class="btn-action edit" title="Edit" data-id="${id}" data-table="${tableInfo.name}" data-id-col="${tableInfo.id_column}">✏️</button>
+    <button class="btn-action terminate" title="Terminate" data-id="${id}" data-table="${tableInfo.name}">⏻</button>               
+    <button class="btn-action reject" title="Delete" data-id="${id}" data-table="${tableInfo.name}" data-id-col="${tableInfo.id_column}">🗑️</button>`;
+
+    // Only add the "Generate Link" button for the licensees table
+    if (tableInfo.name === "varuna_licensee") {
+      buttons += `<button class="btn-action link" title="Generate Access Link" data-id="${id}">🔗</button>`;
+    }
+    return buttons;
+  }
+
+  function buildEditForm(tableName, data) {
+    let title = `Edit ${tableName.replace("varuna_", "").replace(/_/g, " ")}`;
+    editModalTitle.textContent = title.replace(/\b\w/g, (l) => l.toUpperCase());
+
+    // Get the current CSRF token from the page
+    const csrfToken = document
+      .querySelector('meta[name="csrf-token"]')
+      .getAttribute("content");
+
+    let formContent = `<form id="editRecordForm" action="${BASE_URL}api/admin/update_record.php" method="POST">
+            <input type="hidden" name="csrf_token" value="${csrfToken}">
+            <input type="hidden" name="table_name" value="${tableName}">`;
+
+    switch (tableName) {
+      case "varuna_licensee":
+        formContent += `
+                    <input type="hidden" name="id_column" value="id">
+                    <input type="hidden" name="id_value" value="${data.id}">
+                    <div class="input-group">
+                        <label>Licensee Name</label>
+                        <input type="text" name="name" value="${
+                          data.name || ""
+                        }" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Mobile Number</label>
+                        <input type="text" name="mobile_number" value="${
+                          data.mobile_number || ""
+                        }" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Status</label>
+                        <select name="status" required>
+                            <option value="active" ${
+                              data.status === "active" ? "selected" : ""
+                            }>Active</option>
+                            <option value="inactive" ${
+                              data.status === "inactive" ? "selected" : ""
+                            }>Inactive</option>
+                        </select>
+                    </div>`;
+        break;
+
+      case "contracts":
+        formContent += `
+                    <input type="hidden" name="id_column" value="id">
+                    <input type="hidden" name="id_value" value="${data.id}">
+                    <div class="input-group">
+                        <label>Contract Name</label>
+                        <input type="text" name="contract_name" value="${
+                          data.contract_name || ""
+                        }" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Location</label>
+                        <input type="text" name="location" value="${
+                          data.location || ""
+                        }" required>
+                    </div>
+                     <div class="input-group">
+                        <label>Stalls</label>
+                        <input type="number" name="stalls" value="${
+                          data.stalls || ""
+                        }">
+                    </div>
+                    <div class="input-group">
+                        <label>License Fee</label>
+                        <input type="text" name="license_fee" value="${
+                          data.license_fee || ""
+                        }" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Period</label>
+                        <input type="text" name="period" value="${
+                          data.period || ""
+                        }" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Status</label>
+                        <select name="status" required>
+                            <option value="Regular" ${
+                              data.status === "Regular" ? "selected" : ""
+                            }>Regular</option>
+                            <option value="Under extension" ${
+                              data.status === "Under extension"
+                                ? "selected"
+                                : ""
+                            }>Under extension</option>
+                            <option value="Expired" ${
+                              data.status === "Expired" ? "selected" : ""
+                            }>Expired</option>
+                            <option value="Terminated" ${
+                              data.status === "Terminated" ? "selected" : ""
+                            }>Terminated</option>
+                        </select>
+                    </div>`;
+        break;
+    }
+
+    formContent += `<div class="modal-actions"><button type="submit" class="btn-login">Save Changes</button></div></form>`;
+    editModalBody.innerHTML = formContent;
+  }
+
+  function showGeneratedLink(link) {
+    Swal.fire({
+      title: "Link Generated!",
+      html: `
+            <p>Share this secure link with the licensee. It will expire in 30 days.</p>
+            <input id="swal-link-input" class="swal2-input" value="${link}" readonly style="width: 90%;">
+        `,
+      icon: "success",
+      confirmButtonText: "Copy to Clipboard",
+      preConfirm: () => {
+        const linkInput = document.getElementById("swal-link-input");
+        linkInput.select();
+        linkInput.setSelectionRange(0, 99999); // For mobile devices
+        document.execCommand("copy");
+        return true;
+      },
+    }).then((result) => {
+      if (result.isConfirmed) {
+        Swal.fire({
+          toast: true,
+          position: "top-end",
+          icon: "success",
+          title: "Link copied!",
+          showConfirmButton: false,
+          timer: 2000,
+        });
+      }
+    });
+  }
+
+  // --- 3. DATATABLE INITIALIZATIONS ---
+  if (contractsTableEl) {
+    tables.contractsTable = $(contractsTableEl).DataTable({
+      ajax: { url: `${BASE_URL}api/get_contracts_list.php`, dataSrc: "data" },
+      columns: [
+        { data: "id" },
+        { data: "contract_name" },
+        { data: "contract_type" },
+        { data: "station_code" },
+        { data: "licensee_name" },
+        { data: "status" },
+        {
+          data: null,
+          orderable: false,
+          render: (d, t, r) =>
+            renderActions(r, { name: "contracts", id_column: "id" }),
+        },
+      ],
+    });
+  }
+  if (licenseesTableEl) {
+    tables.licenseesTable = $(licenseesTableEl).DataTable({
+      ajax: { url: `${BASE_URL}api/get_licensees_list.php`, dataSrc: "data" },
+      columns: [
+        { data: "id" },
+        { data: "name" },
+        { data: "mobile_number" },
+        { data: "status" },
+        {
+          data: null,
+          orderable: false,
+          render: (d, t, r) =>
+            renderActions(r, { name: "varuna_licensee", id_column: "id" }),
+        },
+      ],
+    });
+  }
+
+  // --- 4. EVENT LISTENERS ---
+  $(".page-container").on("click", ".btn-action.link", function () {
+    const licenseeId = $(this).data("id");
+    const csrfToken = document
+      .querySelector('meta[name="csrf-token"]')
+      .getAttribute("content");
+
+    Swal.fire({
+      title: "Generate Access Link?",
+      text: "Any previously generated link for this licensee will be deactivated.",
+      icon: "info",
+      showCancelButton: true,
+      confirmButtonText: "Yes, generate it!",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const formData = new FormData();
+        formData.append("licensee_id", licenseeId);
+        formData.append("csrf_token", csrfToken);
+
+        fetch(`${BASE_URL}api/admin/generate_licensee_token.php`, {
+          method: "POST",
+          body: formData,
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            refreshToken(data.new_csrf_token);
+            if (data.success) {
+              showGeneratedLink(data.link);
+            } else {
+              Swal.fire("Error!", data.message, "error");
+            }
+          });
+      }
+    });
+  });
+  // Handle Edit Button Clicks
+  $(".page-container").on("click", ".btn-action.edit", function () {
+    const id = $(this).data("id"),
+      table = $(this).data("table");
+    editModalBody.innerHTML = "<p>Loading...</p>";
+    editModal.classList.remove("hidden");
+    fetch(
+      `${BASE_URL}api/admin/get_record_for_edit.php?table=${table}&id=${encodeURIComponent(
+        id
+      )}`
+    )
+      .then((res) => res.json())
+      .then((response) => {
+        if (response.success) {
+          buildEditForm(table, response.data);
+        }
+      });
+  });
+// Handle Terminate Button Clicks
+$('.page-container').on('click', '.btn-action.terminate', function() {
+    const id = $(this).data('id');
+    const table = $(this).data('table');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const entity = table === 'contracts' ? 'Contract' : 'Licensee';
+    const apiUrl = `${BASE_URL}api/terminate_${entity.toLowerCase()}.php`;
+
+    Swal.fire({
+        title: `Terminate this ${entity}?`,
+        text: `This will terminate the ${entity} and all associated records (Contracts and/or Staff). This action can be reversed by an SCI.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, terminate!',
+        confirmButtonColor: '#d9534f'
+    }).then(result => {
+        if (result.isConfirmed) {
+            const formData = new FormData();
+            formData.append(`${entity.toLowerCase()}_id`, id);
+            formData.append('csrf_token', csrfToken);
+            fetch(apiUrl, { method: 'POST', body: formData })
+                .then(res => res.json())
+                .then(data => {
+                    refreshToken(data.new_csrf_token);
+                    if (data.success) {
+                        Swal.fire('Terminated!', data.message, 'success');
+                        for (const key in tables) { if (tables[key] && $.fn.DataTable.isDataTable(tables[key])) tables[key].ajax.reload(null, false); }
+                    } else { Swal.fire('Error!', data.message, 'error'); }
+                });
+        }
+    });
+});
+  // Handle Delete Button Clicks
+  $(".page-container").on("click", ".btn-action.reject", function () {
+    const id = $(this).data("id"),
+      table = $(this).data("table"),
+      idCol = $(this).data("id-col");
+    Swal.fire({
+      title: "Are you sure?",
+      text: "This cannot be undone!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const formData = new FormData();
+        formData.append("table_name", table);
+        formData.append("id_value", id);
+        formData.append("id_column", idCol);
+        formData.append(
+          "csrf_token",
+          document
+            .querySelector('meta[name="csrf-token"]')
+            .getAttribute("content")
+        );
+        fetch(`${BASE_URL}api/admin/delete_record.php`, {
+          method: "POST",
+          body: formData,
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            refreshToken(data.new_csrf_token); // Refresh token on success/failure
+            if (data.success) {
+              Swal.fire("Deleted!", data.message, "success");
+              for (const key in tables) {
+                if (tables[key] && $.fn.DataTable.isDataTable(tables[key]))
+                  tables[key].ajax.reload(null, false);
+              }
+            } else {
+              Swal.fire("Error!", data.message, "error");
+            }
+          });
+      }
+    });
+  });
+
+  // Handle Edit Form Submission
+  $(editModalBody).on("submit", "#editRecordForm", function (e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    fetch(this.action, { method: "POST", body: formData })
+      .then((res) => res.json())
+      .then((data) => {
+        refreshToken(data.new_csrf_token); // Refresh token on success/failure
+        if (data.success) {
+          editModal.classList.add("hidden");
+          Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: "success",
+            title: data.message,
+            showConfirmButton: false,
+            timer: 3000,
+          });
+          for (const key in tables) {
+            if (tables[key] && $.fn.DataTable.isDataTable(tables[key]))
+              tables[key].ajax.reload(null, false);
+          }
+        } else {
+          Swal.fire({
+            icon: "error",
+            title: "Update Failed",
+            text: data.message,
+          });
+        }
+      });
+  });
+
+  // Close Modal Logic
+  editModal.addEventListener("click", function (e) {
+    if (e.target.matches(".modal-overlay, .modal-close-btn"))
+      editModal.classList.add("hidden");
+  });
+});
