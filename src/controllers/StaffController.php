@@ -1,7 +1,7 @@
 <?php
 /**
  * Controller for Staff Onboarding
- * Current Time: Friday, June 13, 2025 at 4:31 PM IST
+ * Current Time: Tuesday, June 24, 2025 at 4:25 PM IST
  * Location: Kalyan, Maharashtra, India
  */
 
@@ -30,7 +30,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         'contact' => 'Contact Number'
     ];
 
-    // Check standard required text/select fields
     foreach ($field_labels as $field_name => $label) {
         if (empty($_POST[$field_name])) {
             $errors[] = $label;
@@ -38,7 +37,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     }
 
-    // Check required file uploads
     if (empty($_FILES['profile_image']) || $_FILES['profile_image']['error'] !== UPLOAD_ERR_OK) {
         $errors[] = 'Profile Image';
         $invalid_fields[] = 'profile_image';
@@ -48,7 +46,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $invalid_fields[] = 'signature_image';
     }
 
-    // If there are any validation errors, redirect back with messages
     if (!empty($errors)) {
         $_SESSION['error_message'] = 'Please fix the required fields: ' . implode(', ', $errors);
         $_SESSION['invalid_fields'] = $invalid_fields;
@@ -75,13 +72,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (!is_dir($upload_dir)) { mkdir($upload_dir, 0755, true); }
 
     $uploaded_files = [];
-    $doc_types = ['police', 'medical', 'ta', 'ppo', 'profile', 'signature'];
+    // =================== LOGIC UPDATED ===================
+    // Added 'adhar_card' to the list of documents to process
+    $doc_types = ['police', 'medical', 'ta', 'ppo', 'profile', 'signature', 'adhar_card'];
+    // =====================================================
 
     foreach ($doc_types as $doc_type) {
         $field_name = $doc_type . '_image';
         if (isset($_FILES[$field_name]) && $_FILES[$field_name]['error'] == UPLOAD_ERR_OK) {
             $safeStaffName = preg_replace("/[^a-zA-Z0-9_]/", "", str_replace(" ", "_", $_POST['name']));
-            $newFileName = $newStaffId . '_' . $safeStaffName . '_' . $doc_type . '.' . pathinfo($_FILES[$field_name]['name'], PATHINFO_EXTENSION);
+            // Changed adhar_card to just adhar to keep filename shorter/cleaner
+            $file_doc_type = ($doc_type === 'adhar_card') ? 'adhar' : $doc_type;
+            $newFileName = $newStaffId . '_' . $safeStaffName . '_' . $file_doc_type . '.' . pathinfo($_FILES[$field_name]['name'], PATHINFO_EXTENSION);
             
             $result = process_image_upload($_FILES[$field_name], $upload_dir, $newFileName);
 
@@ -96,19 +98,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // 6. Database Insertion
     try {
+        // =================== SQL QUERY UPDATED ===================
+        // Added `adhar_card_image` column and its placeholder
         $sql = "INSERT INTO varuna_staff 
-                    (id, contract_id, name, designation, contact, adhar_card_number, status,
+                    (id, contract_id, name, designation, contact, adhar_card_number, adhar_card_image, status,
                      police_image, police_issue_date, police_expiry_date, 
                      medical_image, medical_issue_date, medical_expiry_date,
                      ta_image, ppo_image, profile_image, signature_image) 
                 VALUES 
-                    (:id, :contract_id, :name, :designation, :contact, :adhar_card_number, :status,
+                    (:id, :contract_id, :name, :designation, :contact, :adhar_card_number, :adhar_card_image, :status,
                      :police_image, :police_issue_date, :police_expiry_date,
                      :medical_image, :medical_issue_date, :medical_expiry_date,
                      :ta_image, :ppo_image, :profile_image, :signature_image)";
+        // =========================================================
         
         $stmt = $pdo->prepare($sql);
 
+        // =================== DATA ARRAY UPDATED ===================
+        // Added the new adhar_card_image path to the insertion array
         $data_to_insert = [
             'id' => $newStaffId,
             'contract_id' => $_POST['contract_id'],
@@ -116,6 +123,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             'designation' => $_POST['designation'],
             'contact' => $_POST['contact'],
             'adhar_card_number' => !empty($_POST['adhar_card_number']) ? $_POST['adhar_card_number'] : null,
+            'adhar_card_image' => $uploaded_files['adhar_card_image'] ?? null,
             'status' => 'pending',
             'police_image' => $uploaded_files['police_image'] ?? null,
             'police_issue_date' => !empty($_POST['police_issue_date']) ? $_POST['police_issue_date'] : null,
@@ -128,13 +136,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             'profile_image' => $uploaded_files['profile_image'] ?? null,
             'signature_image' => $uploaded_files['signature_image'] ?? null
         ];
+        // ==========================================================
         
         $stmt->execute($data_to_insert);
 
         // 7. Success Logging and Redirect
-        $logData = [
-            'details' => "Added new staff '{$_POST['name']}' with generated ID: $newStaffId"
-        ];
+        $logData = ['details' => "Added new staff '{$_POST['name']}' with generated ID: $newStaffId"];
         log_activity($pdo, 'STAFF_ADD_SUCCESS', $logData);
 
         unset($_SESSION['old_input']);
@@ -144,9 +151,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     } catch (PDOException $e) {
         // 8. Error Logging and Redirect
-        $logData = [
-            'details' => "Database failure while adding staff '{$_POST['name']}'. Error: " . $e->getMessage()
-        ];
+        $logData = ['details' => "Database failure while adding staff '{$_POST['name']}'. Error: " . $e->getMessage()];
         log_activity($pdo, 'STAFF_ADD_FAIL', $logData);
 
         $_SESSION['error_message'] = "A critical database error occurred. Please try again.";

@@ -111,7 +111,7 @@ $contract_docs_json = json_encode(array_column($contract_types, null, 'ContractT
                     <input type="text" name="license_fee" class="<?php echo in_array('license_fee', $invalid_fields) ? 'is-invalid' : ''; ?>" value="<?php echo htmlspecialchars($old_input['license_fee'] ?? ''); ?>" required>
                 </div>
                 <div class="input-group">
-                    <label>Period</label>
+                    <label>Duration (Date From and To)</label>
                     <input type="text" name="period" class="<?php echo in_array('period', $invalid_fields) ? 'is-invalid' : ''; ?>" value="<?php echo htmlspecialchars($old_input['period'] ?? ''); ?>" required>
                 </div>
                 <div class="input-group">

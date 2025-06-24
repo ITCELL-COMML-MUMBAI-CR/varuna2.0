@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", function () {
   if (!contractSelector) return;
   // Only run this script if the main contract selector element exists on the page
   if (contractSelector) {
-    console.log("Staff Onboarding script loaded successfully.");
+    ////console.log("Staff Onboarding script loaded successfully.");
 
     // Get all necessary page elements once
     const contentContainer = document.getElementById("content_container");
@@ -27,13 +27,14 @@ document.addEventListener("DOMContentLoaded", function () {
     const contractIdField = document.getElementById("contract_id_field");
     const modal = document.getElementById("staff_details_modal");
     const modalBody = document.getElementById("modal_body");
+  const adharImageInput = document.getElementById("adhar_card_image");
     let staffDataTable; // To hold the DataTable instance
 
     // Main Event Listener for Contract Selection
     contractSelector.addEventListener("change", function () {
       const contractId = this.value;
       document.getElementById("contract_id_field").value = contractId;
-      console.log(`Contract selected. ID: ${contractId}`);
+      //console.log(`Contract selected. ID: ${contractId}`);
 
       if (!contractId) {
         contentContainer.classList.add("hidden");
@@ -50,7 +51,7 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("contract_details_section").innerHTML =
         "<p>Loading details...</p>";
 
-      console.log("Fetching contract data...");
+      //console.log("Fetching contract data...");
       fetch(`${BASE_URL}api/get_contract_data.php?id=${contractId}`)
         .then((response) =>
           response.ok
@@ -58,7 +59,7 @@ document.addEventListener("DOMContentLoaded", function () {
             : Promise.reject(`API error: ${response.statusText}`)
         )
         .then((data) => {
-          console.log("API Response Received:", data); // This will show you exactly what the API returns
+          //console.log("API Response Received:", data); // This will show you exactly what the API returns
           if (data.success) {
             populateContractDetails(data.contract);
             updateDocumentFields(data.doc_reqs);
@@ -106,10 +107,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const staffDocsContainer = document.getElementById('staff_documents_container');
     staffDocsContainer.innerHTML = '';
     if (!docReqs || Object.keys(docReqs).length === 0) {
-        console.log('No document requirements found for this contract type.');
+        ////console.log('No document requirements found for this contract type.');
         return;
     }
-    console.log('Updating document fields based on:', docReqs);
+    ////console.log('Updating document fields based on:', docReqs);
 
     // Using 'l' for label and 'n' for name to match the corrected code below
     const docMapping = {

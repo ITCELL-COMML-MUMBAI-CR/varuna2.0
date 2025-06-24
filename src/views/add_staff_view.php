@@ -84,9 +84,14 @@ unset($_SESSION['error_message'], $_SESSION['success_message'], $_SESSION['old_i
                     </div>
                     <div class="input-group"><label>Contact Number</label><input type="text" name="contact" required
                             maxlength="10"></div>
-                    <div class="input-group"><label>Aadhar Card Number (Optional)</label><input type="text"
-                            id="adhar_number" name="adhar_card_number" maxlength="12"><span class="validation-warning"
-                            id="adhar_warning"></span></div>
+                    <div class="input-group"><label>Aadhar Card Number</label>
+                        <input type="text" id="adhar_number" name="adhar_card_number" maxlength="12" required>
+                        <span class="validation-warning" id="adhar_warning"></span>
+                    </div>
+                    <div class="input-group">
+                        <label for="adhar_card_image">Aadhar Card Image  </label>
+                        <input type="file" id="adhar_card_image" name="adhar_card_image" required>
+                    </div>
                 </div>
 
                 <div id="staff_documents_container" class="details-grid" style="margin-top:20px;"></div>

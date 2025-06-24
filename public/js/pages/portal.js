@@ -47,11 +47,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     docFieldsHTML += `
                         <div class="input-group">
                             <label>${key} Issue Date</label>
-                            <input type="date" name="${name}_issue_date" value="${data[name + '_issue_date'] || ''}">
+                            <input type="date" id="${name}_issue_date" name="${name}_issue_date" value="${data[name + '_issue_date'] || ''}">
                          </div>
                          <div class="input-group">
                             <label>${key} Expiry Date</label>
-                            <input type="date" name="${name}_expiry_date" value="${data[name + '_expiry_date'] || ''}" readonly>
+                            <input type="date" id="${name}_expiry_date" name="${name}_expiry_date" value="${data[name + '_expiry_date'] || ''}" readonly>
                          </div>`;
                 }
             }
@@ -234,6 +234,24 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // --- 3. EVENT LISTENERS ---
+  document.addEventListener('change', function(event) {
+    const targetId = event.target.id;
+
+    if (targetId === 'police_issue_date' || targetId === 'medical_issue_date') {
+        const issueDate = new Date(event.target.value);
+        if (!isNaN(issueDate.getTime())) {
+            const years = (targetId === 'police_issue_date') ? 3 : 1;
+            issueDate.setFullYear(issueDate.getFullYear() + years);
+            issueDate.setDate(issueDate.getDate() - 1);
+            
+            // We need to find the expiry input within the context of the modal
+            const expiryInput = document.querySelector('#' + targetId.replace('issue', 'expiry'));
+            if (expiryInput) {
+                expiryInput.value = issueDate.toISOString().split('T')[0];
+            }
+        }
+    }
+});
   if (bulkPrintBtn) {
     bulkPrintBtn.addEventListener("click", function () {
       if (!selectedContractId) {

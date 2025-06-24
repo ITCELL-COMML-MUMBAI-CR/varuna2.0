@@ -66,7 +66,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // For simplicity here, we will assume a similar function `buildEditForm` exists.
         // This will be a large function, so we will implement it by reusing existing patterns.
         // The key is that the data is fetched and the modal is shown.
-        buildCompleteEditForm(data.staff, data.doc_reqs, data.all_contracts);
+        buildEditForm(data.staff, data.doc_reqs, data.all_contracts);
       } else {
         throw new Error(data.message || "Could not load data.");
       }
@@ -76,87 +76,127 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // This function builds the form HTML. It's a simplified version of the one in staffApproval.js
-  async function buildCompleteEditForm(staff, docReqs, allContracts) {
-    const designationResponse = await fetch(
-      `${BASE_URL}api/get_designations.php`
-    );
-    const designationData = await designationResponse.json();
-    const designations = designationData.designations || [];
 
-    let designationOptions = designations
-      .map(
-        (d) =>
-          `<option value="${d}" ${
-            d === staff.designation ? "selected" : ""
-          }>${d}</option>`
-      )
-      .join("");
+  async function buildEditForm(s, docReqs, allContracts) {
+    const editModalBody = document.getElementById("edit_modal_body");
+
+    // This part fetching designations and contracts is correct and remains the same
+    let designationOptions = "";
+    try {
+      const response = await fetch(`${BASE_URL}api/get_designations.php`);
+      const data = await response.json();
+      if (data.success) {
+        designationOptions = data.designations
+          .map(
+            (d) =>
+              `<option value="${d}" ${
+                d == s.designation ? "selected" : ""
+              }>${d}</option>`
+          )
+          .join("");
+      }
+    } catch (e) {
+      console.error("Could not fetch designations", e);
+    }
+
     let contractOptions = allContracts
       .map(
         (c) =>
-          `<option value="${c.id}" ${
-            c.id === staff.contract_id ? "selected" : ""
-          }>${c.contract_name} (${c.station_code})</option>`
+          `<option value="${c.id}" ${c.id == s.contract_id ? "selected" : ""}>${
+            c.contract_name
+          } (${c.station_code})</option>`
       )
       .join("");
 
-    let docFieldsHTML = "";
+    // --- Build the main form structure ---
+    let formHTML = `<form id="editStaffForm" method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="${csrfToken}">
+        <input type="hidden" name="staff_id" value="${s.id}">
+        
+        <h4>Edit Core Details</h4>
+        <div class="details-grid">
+            <div class="input-group"><label>Full Name</label><input type="text" name="name" value="${
+              s.name || ""
+            }" required></div>
+            <div class="input-group"><label>Designation</label><select name="designation" required><option value="">-- Select --</option>${designationOptions}</select></div>
+            <div class="input-group"><label>Contact</label><input type="text" name="contact" value="${
+              s.contact || ""
+            }" required></div>
+            <div class="input-group"><label>Aadhar</label><input type="text" name="adhar_card_number" value="${
+              s.adhar_card_number || ""
+            }"></div>
+            <div class="input-group grid-full-width"><label>Change Contract</label><select name="contract_id" required>${contractOptions}</select></div>
+        </div>
+
+        <h4 class="modal-section-title">Update Documents (Upload a file only to replace an existing one)</h4>
+        <div class="details-grid" id="edit_doc_fields">
+            </div>
+
+        <div class="modal-actions"><button type="submit" class="btn-login">Update & Resubmit</button></div>
+    </form>`;
+
+    editModalBody.innerHTML = formHTML;
+
+    const editDocFieldsContainer = document.getElementById("edit_doc_fields");
+    editDocFieldsContainer.innerHTML = ""; // Clear it first
+
+    // Add Profile and Signature fields first (These don't have dates)
+    editDocFieldsContainer.innerHTML += `
+        <div class="input-group"><label>Profile Image</label><div class="current-doc-link">Current: <a href="${BASE_URL}uploads/staff/${s.profile_image}" target="_blank">View File</a></div><input type="file" name="profile_image" accept="image/*"></div>
+        <div class="input-group"><label>Signature Image</label><div class="current-doc-link">Current: <a href="${BASE_URL}uploads/staff/${s.signature_image}" target="_blank">View File</a></div><input type="file" name="signature_image" accept="image/*"></div>
+        <div class="input-group"></div>
+    `;
+
+    // --- CORRECTED LOGIC for other conditional document fields ---
     const docMapping = {
-      Police: "police",
-      Medical: "medical",
-      TA: "ta",
-      PPO: "ppo",
-      Profile: "profile",
-      Signature: "signature",
+      Police: { l: "Police Verification", n: "police" },
+      Medical: { l: "Medical Fitness", n: "medical" },
+      TA: { l: "TA Document", n: "ta" },
+      PPO: { l: "PPO Document", n: "ppo" },
     };
+    for (const docKey in docMapping) {
+      if (docReqs && docReqs[docKey] === "Y") {
+        const docInfo = docMapping[docKey];
+        const imageField = `${docInfo.n}_image`;
+        const issueDateField = `${docInfo.n}_issue_date`;
+        const expiryDateField = `${docInfo.n}_expiry_date`;
+        const hasExpiryField = docKey === "Police" || docKey === "Medical";
 
-    for (const key in docMapping) {
-      const name = docMapping[key];
-      const isRequiredByContract = docReqs && docReqs[key] === "Y";
-      const isProfileOrSig = key === "Profile" || key === "Signature";
-
-      if (isRequiredByContract || isProfileOrSig) {
-        const existingFile = staff[name + "_image"];
-        const existingFileLink = existingFile
-          ? `<div class="current-doc-link">Current: <a href="${BASE_URL}uploads/staff/${existingFile}" target="_blank">View</a></div>`
+        const currentDocHTML = s[imageField]
+          ? `<div class="current-doc-link">Current: <a href="${BASE_URL}uploads/staff/${s[imageField]}" target="_blank">View File</a></div>`
           : '<div class="current-doc-link">No file uploaded.</div>';
 
-        docFieldsHTML += `<div class="input-group grid-full-width"><label>${key} Image ${existingFileLink}</label><input type="file" name="${name}_image" accept="image/*"></div>`;
-
-        if (key === "Police" || key === "Medical") {
-          docFieldsHTML += `
-                        <div class="input-group"><label>${key} Issue Date</label><input type="date" name="${name}_issue_date" value="${
-            staff[name + "_issue_date"] || ""
-          }"></div>
-                        <div class="input-group"><label>${key} Expiry Date</label><input type="date" name="${name}_expiry_date" value="${
-            staff[name + "_expiry_date"] || ""
-          }" readonly></div>`;
-        }
+        const docFieldHTML = `
+                <div class="input-group grid-full-width">
+                    <label>${docInfo.l} Image</label>
+                    ${currentDocHTML}
+                    <input type="file" name="${imageField}" accept="image/*">
+                </div>
+                <div class="input-group">
+                    <label>${docInfo.l} Issue Date</label>
+                    <div class="date-input-wrapper">
+                        <input type="date" id="${issueDateField}" name="${issueDateField}" value="${
+          s[issueDateField] || ""
+        }">
+                    </div>
+                </div>
+                ${
+                  hasExpiryField
+                    ? `
+                <div class="input-group">
+                    <label>${docInfo.l} Expiry Date</label>
+                    <div class="date-input-wrapper">
+                        <input type="date" id="${expiryDateField}" name="${expiryDateField}" value="${
+                        s[expiryDateField] || ""
+                      }" readonly>
+                    </div>
+                </div>`
+                    : '<div class="input-group"></div>'
+                }
+            `;
+        editDocFieldsContainer.insertAdjacentHTML("beforeend", docFieldHTML);
       }
     }
-
-    editModalBody.innerHTML = `
-            <form id="editStaffFormApproved" action="${BASE_URL}api/update_staff_details.php" method="POST" enctype="multipart/form-data">
-                <input type="hidden" name="csrf_token" value="${csrfToken}">
-                <input type="hidden" name="staff_id" value="${staff.id}">
-                <h4>Core Details</h4>
-                <div class="details-grid">
-                    <div class="input-group"><label>Full Name</label><input type="text" name="name" value="${
-                      staff.name || ""
-                    }" required></div>
-                    <div class="input-group"><label>Designation</label><select name="designation" required>${designationOptions}</select></div>
-                    <div class="input-group"><label>Contact</label><input type="text" name="contact" value="${
-                      staff.contact || ""
-                    }" required></div>
-                    <div class="input-group"><label>Aadhar</label><input type="text" name="adhar_card_number" value="${
-                      staff.adhar_card_number || ""
-                    }"></div>
-                    <div class="input-group grid-full-width"><label>Change Contract</label><select name="contract_id" required>${contractOptions}</select></div>
-                </div>
-                <h4 class="modal-section-title">Update Documents (Upload a file only to replace an existing one)</h4>
-                <div class="details-grid">${docFieldsHTML}</div>
-                <div class="modal-actions"><button type="submit" class="btn-login">Update & Resubmit for Approval</button></div>
-            </form>`;
   }
   // --- 3. EVENT LISTENERS ---
 
@@ -218,34 +258,59 @@ document.addEventListener("DOMContentLoaded", function () {
       editModal.classList.add("hidden");
     }
   });
-   tableElement.on('click', '.btn-action.terminate', function() {
-        const staffId = $(this).data('staff-id');
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+  editModal.addEventListener("change", function (event) {
+    const targetId = event.target.id;
 
-        Swal.fire({
-            title: 'Terminate this Staff Member?',
-            text: `This will set staff member ${staffId}'s status to Terminated. They can be re-approved later by an SCI.`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, terminate!',
-            confirmButtonColor: '#d9534f'
-        }).then(result => {
-            if (result.isConfirmed) {
-                const formData = new FormData();
-                formData.append('staff_id', staffId);
-                formData.append('csrf_token', csrfToken);
-                fetch(`${BASE_URL}api/terminate_staff.php`, { method: 'POST', body: formData })
-                    .then(res => res.json())
-                    .then(response => {
-                        refreshToken(response.new_csrf_token);
-                        if (response.success) {
-                            Swal.fire('Terminated!', response.message, 'success');
-                            approvedTable.ajax.reload(null, false);
-                        } else {
-                            Swal.fire('Error!', response.message, 'error');
-                        }
-                    });
+    if (targetId === "police_issue_date" || targetId === "medical_issue_date") {
+      const issueDate = new Date(event.target.value);
+      if (!isNaN(issueDate.getTime())) {
+        const years = targetId === "police_issue_date" ? 3 : 1;
+        issueDate.setFullYear(issueDate.getFullYear() + years);
+        issueDate.setDate(issueDate.getDate() - 1);
+
+        // We need to find the expiry input within the context of the modal
+        const expiryInput = editModal.querySelector(
+          "#" + targetId.replace("issue", "expiry")
+        );
+        if (expiryInput) {
+          expiryInput.value = issueDate.toISOString().split("T")[0];
+        }
+      }
+    }
+  });
+  tableElement.on("click", ".btn-action.terminate", function () {
+    const staffId = $(this).data("staff-id");
+    const csrfToken = document
+      .querySelector('meta[name="csrf-token"]')
+      .getAttribute("content");
+
+    Swal.fire({
+      title: "Terminate this Staff Member?",
+      text: `This will set staff member ${staffId}'s status to Terminated. They can be re-approved later by an SCI.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, terminate!",
+      confirmButtonColor: "#d9534f",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const formData = new FormData();
+        formData.append("staff_id", staffId);
+        formData.append("csrf_token", csrfToken);
+        fetch(`${BASE_URL}api/terminate_staff.php`, {
+          method: "POST",
+          body: formData,
+        })
+          .then((res) => res.json())
+          .then((response) => {
+            refreshToken(response.new_csrf_token);
+            if (response.success) {
+              Swal.fire("Terminated!", response.message, "success");
+              approvedTable.ajax.reload(null, false);
+            } else {
+              Swal.fire("Error!", response.message, "error");
             }
-        });
+          });
+      }
     });
+  });
 });
