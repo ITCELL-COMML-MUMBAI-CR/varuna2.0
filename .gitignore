@@ -1,3 +1,4 @@
 .htaccess
 public/.htaccess
 public/uploads/
+config.php

@@ -1,92 +1,136 @@
 <?php
 /**
  * API to fetch all aggregated data for the main dashboard.
- * FIX: Ensures VIEWERS and ADMINS get unfiltered data.
+ * REFACTORED: Uses separate, complete queries for different user roles 
+ * to prevent SQL syntax errors and improve readability.
  */
 require_once __DIR__ . '/../../src/init.php';
 header('Content-Type: application/json');
 
 try {
+    // Ensure user is authenticated
     if (!isset($_SESSION['user_id'])) {
         throw new Exception("Authentication required.", 403);
     }
 
-    // --- 1. Define WHERE clauses based on user role ---
-    $where_clause_contracts = "";
-    $where_clause_staff = "";
+    $role = $_SESSION['role'];
     $params = [];
 
-    // --- FIX: Apply filters ONLY for SCI role. Admin and Viewer see all. ---
-    if ($_SESSION['role'] === 'SCI') {
+    // Initialize SQL query strings
+    $total_licensees_sql = '';
+    $total_contracts_sql = '';
+    $total_staff_sql = '';
+    $staff_status_sql = '';
+    $licensee_breakdown_sql = '';
+
+    // --- Logic Branch based on User Role ---
+    if ($role === 'SCI') {
+        // --- Queries for SCI Role (Filtered Data) ---
+        
+        $where_clause_contracts = "";
+        $where_clause_staff = "";
+
+        // Build the primary WHERE clause for contracts based on SCI's section
         if (!empty($_SESSION['section'])) {
             $where_clause_contracts = " WHERE c.section_code = ? ";
             $params[] = $_SESSION['section'];
         } elseif (!empty($_SESSION['department_section'])) {
+            // This clause finds contracts belonging to a broader department/section
             $where_clause_contracts = " WHERE c.contract_type IN (SELECT vct.ContractType FROM varuna_contract_types vct WHERE vct.Section = ?) ";
             $params[] = $_SESSION['department_section'];
         } else {
-            $where_clause_contracts = " WHERE 1=0 "; // No section, no data
+            // If SCI has no assigned section, they see no data.
+            $where_clause_contracts = " WHERE 1=0 "; 
         }
-        // Staff filter depends on the contract filter
+
+        // The staff filter depends on the contracts the SCI can see
         $where_clause_staff = " WHERE s.contract_id IN (SELECT c.id FROM contracts c " . $where_clause_contracts . ")";
+
+        // Define the full SQL queries for the SCI role
+        $total_licensees_sql = "SELECT COUNT(DISTINCT c.licensee_id) FROM contracts c" . $where_clause_contracts;
+        $total_contracts_sql = "SELECT COUNT(c.id) FROM contracts c" . $where_clause_contracts;
+        $total_staff_sql = "SELECT COUNT(s.id) FROM varuna_staff s" . $where_clause_staff;
+        $staff_status_sql = "SELECT status, COUNT(*) as count FROM varuna_staff s " . $where_clause_staff . " GROUP BY status";
+        
+        $licensee_breakdown_sql = "
+            SELECT 
+                l.id as licensee_id, 
+                l.name as licensee_name, 
+                COUNT(DISTINCT c.id) as contract_count,
+                COUNT(s.id) as staff_count
+            FROM varuna_licensee l
+            LEFT JOIN contracts c ON l.id = c.licensee_id
+            LEFT JOIN varuna_staff s ON c.id = s.contract_id
+            " . $where_clause_contracts . "
+            GROUP BY l.id, l.name
+            ORDER BY l.name ASC";
+
+    } else {
+        // --- Queries for ADMIN/VIEWER Roles (Unfiltered Data) ---
+
+        $total_licensees_sql = "SELECT COUNT(id) FROM varuna_licensee";
+        $total_contracts_sql = "SELECT COUNT(id) FROM contracts";
+        $total_staff_sql = "SELECT COUNT(id) FROM varuna_staff";
+        $staff_status_sql = "SELECT status, COUNT(*) as count FROM varuna_staff GROUP BY status";
+        
+        $licensee_breakdown_sql = "
+            SELECT 
+                l.id as licensee_id, 
+                l.name as licensee_name, 
+                COUNT(DISTINCT c.id) as contract_count,
+                COUNT(s.id) as staff_count
+            FROM varuna_licensee l
+            LEFT JOIN contracts c ON l.id = c.licensee_id
+            LEFT JOIN varuna_staff s ON c.id = s.contract_id
+            GROUP BY l.id, l.name
+            ORDER BY l.name ASC";
     }
 
-    // --- 2. Fetch Main Stats Cards Data ---
-    $total_licensees_sql = "SELECT COUNT(id) FROM varuna_licensee" . ($params ? " WHERE id IN (SELECT c.licensee_id FROM contracts c " . $where_clause_contracts . ")" : "");
+    // --- Execute Queries and Fetch Data ---
+
+    // Stats Cards
     $stmt = $pdo->prepare($total_licensees_sql);
     $stmt->execute($params);
     $licensee_count = $stmt->fetchColumn();
 
-    $total_contracts_sql = "SELECT COUNT(c.id) FROM contracts c" . $where_clause_contracts;
     $stmt = $pdo->prepare($total_contracts_sql);
     $stmt->execute($params);
     $contract_count = $stmt->fetchColumn();
-
-    $total_staff_sql = "SELECT COUNT(s.id) FROM varuna_staff s" . $where_clause_staff;
+    
+    // For staff count, ADMIN/VIEWER use empty params, SCI uses the generated one.
+    $staff_params = ($role === 'SCI') ? $params : [];
     $stmt = $pdo->prepare($total_staff_sql);
-    $stmt->execute($params);
+    $stmt->execute($staff_params);
     $staff_count = $stmt->fetchColumn();
 
-
-    // --- 3. Fetch Data for Staff Status Pie Chart ---
-    $staff_status_sql = "SELECT status, COUNT(*) as count FROM varuna_staff s " . $where_clause_staff . " GROUP BY status";
+    // Staff Status Pie Chart
     $stmt = $pdo->prepare($staff_status_sql);
-    $stmt->execute($params);
+    $stmt->execute($staff_params);
     $staff_status_data = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
-    
-    // --- 4. Fetch Data for the Licensee Breakdown Table ---
-    $licensee_breakdown_sql = "
-        SELECT 
-            l.id as licensee_id, 
-            l.name as licensee_name, 
-            COUNT(DISTINCT c.id) as contract_count,
-            COUNT(s.id) as staff_count
-        FROM varuna_licensee l
-        LEFT JOIN contracts c ON l.id = c.licensee_id " . $where_clause_contracts . "
-        LEFT JOIN varuna_staff s ON c.id = s.contract_id
-        GROUP BY l.id, l.name
-        ORDER BY l.name ASC";
+
+    // Licensee Breakdown Table
     $stmt = $pdo->prepare($licensee_breakdown_sql);
     $stmt->execute($params);
-    $licensee_breakdown = $stmt->fetchAll();
+    $licensee_breakdown = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
-    // --- 5. Assemble and Return the Response ---
+    // --- Assemble and Return the Final JSON Response ---
     echo json_encode([
         'success' => true,
         'stats' => [
-            'licensees' => $licensee_count,
-            'contracts' => $contract_count,
-            'staff' => $staff_count
+            'licensees' => $licensee_count ?: 0,
+            'contracts' => $contract_count ?: 0,
+            'staff' => $staff_count ?: 0
         ],
         'staff_status_chart' => [
-            'labels' => array_keys($staff_status_data),
-            'data' => array_values($staff_status_data)
+            'labels' => !empty($staff_status_data) ? array_keys($staff_status_data) : [],
+            'data' => !empty($staff_status_data) ? array_values($staff_status_data) : []
         ],
         'licensee_breakdown' => $licensee_breakdown
     ]);
 
 } catch (Exception $e) {
-    http_response_code(500);
+    // Generic error handling
+    http_response_code($e->getCode() ?: 500);
     echo json_encode(["success" => false, "error" => $e->getMessage()]);
 }
