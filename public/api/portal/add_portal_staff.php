@@ -25,15 +25,22 @@ try {
 
     // 3. Generate a unique staff ID
     do {
-        $newStaffId = 'V' . rand(10000, 99999);
+        $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $randomString = $characters[rand(0, 25)] . $characters[rand(0, 25)];
+        $randomString2 = $characters[rand(0, 25)];
+        $gen = rand(10, 99);
+        $gen2 = rand(10, 99);
+        $newStaffId = $randomString . $gen . $randomString2 . $gen2;
+
         $idCheckStmt = $pdo->prepare("SELECT id FROM varuna_staff WHERE id = ?");
         $idCheckStmt->execute([$newStaffId]);
-    } while ($idCheckStmt->fetch());
+        $idExists = $idCheckStmt->fetch();
+    } while ($idExists);
     
     // 4. File Upload Processing (using the existing helper function)
     $upload_dir = __DIR__ . '/../../../public/uploads/staff/';
     $uploaded_files = [];
-    $doc_types = ['police', 'medical', 'ta', 'ppo', 'profile', 'signature', 'aadhar'];
+    $doc_types = ['police', 'medical', 'ta', 'ppo', 'profile', 'signature', 'adhar_card'];
 
     foreach ($doc_types as $doc_type) {
         $field_name = $doc_type . '_image';

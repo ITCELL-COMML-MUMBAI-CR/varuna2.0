@@ -485,18 +485,16 @@ body {
 }
 
 .modal-content {
-    background-color: var(--white-color);
-    padding: 25px 30px;
-    border-radius: 10px;
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 30px;
+    border: 1px solid #ddd;
     width: 90%;
-    max-width: 800px;
-    /* Increased max-width for more space */
+    max-width: 950px;
+    border-radius: 12px;
     position: relative;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-
-    /* NEW: This makes the modal content scrollable if it gets too tall */
-    max-height: 90vh;
-    overflow-y: auto;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    animation: slideIn 0.4s ease-out;
 }
 
 /* The close button (X) */
@@ -517,11 +515,13 @@ body {
 }
 
 .modal-section-title {
-    margin-top: 25px;
-    margin-bottom: 10px;
-    padding-bottom: 5px;
-    border-bottom: 1px solid #eee;
-    font-size: 1.1rem;
+    margin-top: 30px;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--primary-color);
+    font-size: 1.2rem;
+    color: var(--primary-color);
+    font-weight: 500;
 }
 
 
@@ -579,16 +579,34 @@ body {
 }
 
 .modal-profile-img {
-    height: 200px;
-    /* REMOVED border-radius: 50% to make it rectangular */
+    width: 150px; /* Adjust width as needed */
+    height: 200px; /* Adjust height as needed */
+    object-fit: cover;
+    border-radius: 8px;
+    display: block;
+    margin: 0 auto;
+}
+
+.modal-doc-item {
+    background-color: #fafafa;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.modal-doc-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 .modal-doc-item label {
     font-weight: 500;
     font-size: 0.9rem;
-    color: #555;
+    color: #333;
     display: block;
-    margin-bottom: 5px;
+    margin-bottom: 10px;
 }
 
 .modal-signature-img {
@@ -741,6 +759,19 @@ body {
 
 .btn-action.view:hover {
     background-color: #31b0d5;
+}
+
+.btn-action.print {
+    background-color: #6c757d;
+    /* A gray color for print */
+    color: white;
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    font-weight: normal;
+}
+
+.btn-action.print:hover {
+    background-color: #5a6268;
 }
 
 .btn-action.edit {

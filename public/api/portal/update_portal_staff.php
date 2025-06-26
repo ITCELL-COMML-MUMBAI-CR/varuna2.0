@@ -24,27 +24,55 @@ try {
         throw new Exception('Permission denied to edit this staff member.', 403);
     }
 
-    // The rest of the logic is adapted from the main `update_staff_details.php` API
     $pdo->beginTransaction();
-    // ... (This would include the logic for file uploads and dynamic SQL query building)
-    // For brevity, we'll perform a simple update here. The full file upload logic would be identical
-    // to the main update_staff_details.php API.
 
-    $sql = "UPDATE varuna_staff SET 
-                name = :name, 
-                designation = :designation, 
-                contact = :contact, 
-                adhar_card_number = :adhar_card_number,
-                status = 'pending'
-            WHERE id = :staff_id";
+    // 1. File Upload Processing
+    $upload_dir = __DIR__ . '/../../../public/uploads/staff/';
+    $uploaded_files = [];
+    $doc_types = ['police', 'medical', 'ta', 'ppo', 'profile', 'signature', 'adhar_card'];
 
+    foreach ($doc_types as $doc_type) {
+        $field_name = $doc_type . '_image';
+        if (isset($_FILES[$field_name]) && $_FILES[$field_name]['error'] == UPLOAD_ERR_OK) {
+            $safeStaffName = preg_replace("/[^a-zA-Z0-9_]/", "", str_replace(" ", "_", $_POST['name']));
+            $newFileName = $staff_id . '_' . $safeStaffName . '_' . $doc_type . '.' . pathinfo($_FILES[$field_name]['name'], PATHINFO_EXTENSION);
+            
+            $result = process_image_upload($_FILES[$field_name], $upload_dir, $newFileName);
+            if (is_array($result)) { throw new Exception('File Upload Error: ' . implode(', ', $result)); }
+            $uploaded_files[$field_name] = $result;
+        }
+    }
+
+    // 2. Dynamic SQL Query Building
+    $sql_parts = [];
+    $data_to_bind = [];
+
+    // Basic fields
+    $sql_parts = ['name = :name', 'designation = :designation', 'contact = :contact', 'adhar_card_number = :adhar_card_number', 'status = \'pending\''];
     $data_to_bind = [
         'name' => $_POST['name'],
         'designation' => $_POST['designation'],
         'contact' => $_POST['contact'],
-        'adhar_card_number' => !empty($_POST['adhar_card_number']) ? $_POST['adhar_card_number'] : null,
-        'staff_id' => $staff_id
+        'adhar_card_number' => !empty($_POST['adhar_card_number']) ? $_POST['adhar_card_number'] : null
     ];
+
+    // Add file fields to query if they were uploaded
+    foreach ($uploaded_files as $key => $filename) {
+        $sql_parts[] = "`$key` = :$key";
+        $data_to_bind[$key] = $filename;
+    }
+
+    // Add date fields
+    $date_fields = ['police_issue_date', 'police_expiry_date', 'medical_issue_date', 'medical_expiry_date'];
+    foreach ($date_fields as $field) {
+        if (isset($_POST[$field])) {
+            $sql_parts[] = "`$field` = :$field";
+            $data_to_bind[$field] = !empty($_POST[$field]) ? $_POST[$field] : null;
+        }
+    }
+
+    $sql = "UPDATE varuna_staff SET " . implode(', ', $sql_parts) . " WHERE id = :staff_id";
+    $data_to_bind['staff_id'] = $staff_id;
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($data_to_bind);

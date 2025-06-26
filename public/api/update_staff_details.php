@@ -29,7 +29,7 @@ try {
     // --- File Update Logic ---
     $update_file_clauses = [];
     $file_data_to_bind = [];
-    $doc_types = ['police', 'medical', 'ta', 'ppo', 'profile', 'signature'];
+    $doc_types = ['police', 'medical', 'ta', 'ppo', 'profile', 'signature', 'adhar_card'];
     
     foreach ($doc_types as $doc_type) {
         $field_name = $doc_type . '_image';

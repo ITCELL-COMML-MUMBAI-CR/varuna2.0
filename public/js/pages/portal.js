@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", function () {
         let designationOptions = designations.map(d => `<option value="${d}" ${data.designation == d ? 'selected' : ''}>${d}</option>`).join('');
     
         let docFieldsHTML = '';
-        const docMapping = { AadharCard: 'aadhar', Profile: 'profile', Signature: 'signature', Police: 'police', Medical: 'medical', TA: 'ta', PPO: 'ppo' };
+        const docMapping = { AadharCard: 'adhar_card', Profile: 'profile', Signature: 'signature', Police: 'police', Medical: 'medical', TA: 'ta', PPO: 'ppo' };
     
         for (const key in docMapping) {
             const name = docMapping[key];
@@ -31,17 +31,23 @@ document.addEventListener("DOMContentLoaded", function () {
             const hasExpiry = (key === 'Police' || key === 'Medical' || key === 'TA');
             const hasIssue = (key === 'Police' || key === 'Medical' );
             
-            // Only render the field if it's required by the contract OR if it's the core Profile/Signature fields
-            if ((docReqs && docReqs[key] === 'Y') || key === 'Profile' || key === 'Signature') {
-                const existingFile = data[name + '_image'];
-                const existingFileLink = existingFile ? `<div class="current-doc-link">Current: <a href="${BASE_URL}uploads/staff/${existingFile}" target="_blank">View File</a></div>` : '';
+            // Only render the field if it's required by the contract OR if it's a core field (Profile, Signature, Aadhar)
+            if ((docReqs && docReqs[key] === 'Y') || key === 'Profile' || key === 'Signature' || key === 'AadharCard') {
+                // Use the correct field name for Aadhar card image
+                const existingFile = data[name + '_image'] || (key === 'AadharCard' ? data.adhar_card_image : null);
+                let existingFileLink = '';
+                if (isEdit && existingFile) {
+                    existingFileLink = `<div class="current-doc-link">Current: <a href="${BASE_URL}uploads/staff/${existingFile}" target="_blank">View File</a></div>`;
+                }
 
-                // Profile and Signature are always required on add
-                const requiredAttr = (key === 'Profile' || key === 'Signature') && isRequiredOnAdd ? 'required' : '';
+                // Profile, Signature, and Aadhar are always required on add
+                const requiredAttr = (key === 'Profile' || key === 'Signature' || key === 'AadharCard') && isRequiredOnAdd ? 'required' : '';
 
+                // For Aadhar card, use the exact field name expected by the backend
+                const fieldName = key === 'AadharCard' ? 'adhar_card_image' : `${name}_image`;
                 docFieldsHTML += `<div class="input-group grid-full-width">
                                 <label>${key} Image ${existingFileLink}</label>
-                                <input type="file" name="${name}_image" accept="image/*" ${requiredAttr}>
+                                <input type="file" name="${fieldName}" accept="image/*" ${requiredAttr}>
                              </div>`;
                 
                 if (hasExpiry && hasIssue) {
@@ -114,7 +120,112 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // --- FIX: This is the corrected and final version of the Edit Staff modal ---
+    // Function to view staff details
+    async function openViewStaffModal(staffId) {
+        const staffRes = await fetch(`${BASE_URL}api/portal/get_staff_for_edit.php?id=${staffId}`);
+        const staffData = await staffRes.json();
+
+        if (!staffData.success) {
+            Swal.fire("Error", "Could not load staff details.", "error");
+            return;
+        }
+
+        const staff = staffData.staff;
+        
+        // Build the modal content with staff details and images
+        let modalContent = `
+            <div class="staff-view-modal">
+                <div class="staff-id-header">
+                    <h3>Staff ID: ${staff.id}</h3>
+                </div>
+                <div class="staff-details">
+                    <div class="details-section">
+                        <h4>Personal Information</h4>
+                        <p><strong>Name:</strong> ${staff.name}</p>
+                        <p><strong>Designation:</strong> ${staff.designation}</p>
+                        <p><strong>Contact:</strong> ${staff.contact}</p>
+                        <p><strong>Aadhar Number:</strong> ${staff.adhar_card_number || 'N/A'}</p>
+                        <p><strong>Status:</strong> <span class="status-${staff.status}">${staff.status}</span></p>
+                    </div>
+                    
+                    <div class="images-section">
+                        <h4>Images</h4>
+                        <div class="image-grid">
+                            <div class="image-item">
+                                <label>Profile Image</label>
+                                ${staff.profile_image ? `<a href="${BASE_URL}uploads/staff/${staff.profile_image}" target="_blank"><img src="${BASE_URL}uploads/staff/${staff.profile_image}" alt="Profile" class="staff-image"></a>` : 'No image available'}
+                            </div>
+                            <div class="image-item">
+                                <label>Signature</label>
+                                ${staff.signature_image ? `<a href="${BASE_URL}uploads/staff/${staff.signature_image}" target="_blank"><img src="${BASE_URL}uploads/staff/${staff.signature_image}" alt="Signature" class="staff-image"></a>` : 'No image available'}
+                            </div>
+                            <div class="image-item">
+                                <label>Aadhar Card</label>
+                                ${staff.adhar_card_image ? `<a href="${BASE_URL}uploads/staff/${staff.adhar_card_image}" target="_blank"><img src="${BASE_URL}uploads/staff/${staff.adhar_card_image}" alt="Aadhar Card" class="staff-image"></a>` : 'No image available'}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="documents-section">
+                        <h4>Other Documents</h4>
+                        <div class="image-grid">
+                            ${staff.police_image ? `
+                            <div class="image-item">
+                                <label>Police Verification</label>
+                                <a href="${BASE_URL}uploads/staff/${staff.police_image}" target="_blank"><img src="${BASE_URL}uploads/staff/${staff.police_image}" alt="Police Verification" class="staff-image"></a>
+                                ${staff.police_issue_date ? `<p><small>Issue: ${staff.police_issue_date}</small></p>` : ''}
+                                ${staff.police_expiry_date ? `<p><small>Expiry: ${staff.police_expiry_date}</small></p>` : ''}
+                            </div>` : ''}
+                            
+                            ${staff.medical_image ? `
+                            <div class="image-item">
+                                <label>Medical Certificate</label>
+                                <a href="${BASE_URL}uploads/staff/${staff.medical_image}" target="_blank"><img src="${BASE_URL}uploads/staff/${staff.medical_image}" alt="Medical Certificate" class="staff-image"></a>
+                                ${staff.medical_issue_date ? `<p><small>Issue: ${staff.medical_issue_date}</small></p>` : ''}
+                                ${staff.medical_expiry_date ? `<p><small>Expiry: ${staff.medical_expiry_date}</small></p>` : ''}
+                            </div>` : ''}
+                            
+                            ${staff.ta_image ? `
+                            <div class="image-item">
+                                <label>TA Document</label>
+                                <a href="${BASE_URL}uploads/staff/${staff.ta_image}" target="_blank"><img src="${BASE_URL}uploads/staff/${staff.ta_image}" alt="TA Document" class="staff-image"></a>
+                                ${staff.ta_expiry_date ? `<p><small>Expiry: ${staff.ta_expiry_date}</small></p>` : ''}
+                            </div>` : ''}
+                            
+                            ${staff.ppo_image ? `
+                            <div class="image-item">
+                                <label>PPO Document</label>
+                                <a href="${BASE_URL}uploads/staff/${staff.ppo_image}" target="_blank"><img src="${BASE_URL}uploads/staff/${staff.ppo_image}" alt="PPO Document" class="staff-image"></a>
+                            </div>` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <style>
+                .staff-view-modal { text-align: left; }
+                .staff-id-header { background-color: #f0f0f0; padding: 10px; margin-bottom: 15px; border-radius: 5px; }
+                .staff-id-header h3 { margin: 0; color: #333; }
+                .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 10px; }
+                .image-item { border: 1px solid #ddd; padding: 10px; border-radius: 5px; }
+                .image-item label { display: block; font-weight: bold; margin-bottom: 5px; }
+                .staff-image { max-width: 100%; height: auto; max-height: 150px; display: block; margin: 0 auto; }
+                .details-section, .images-section, .documents-section { margin-bottom: 20px; }
+                .status-approved { color: green; }
+                .status-pending { color: orange; }
+                .status-rejected { color: red; }
+            </style>
+        `;
+
+        Swal.fire({
+            title: `Staff Details: ${staff.name}`,
+            html: modalContent,
+            width: '800px',
+            showCloseButton: true,
+            showConfirmButton: false
+        });
+    }
+
+    // --- Edit Staff modal ---
     async function openEditStaffModal(staffId) {
         const [staffRes, formRes] = await Promise.all([
             fetch(`${BASE_URL}api/portal/get_staff_for_edit.php?id=${staffId}`),
@@ -217,12 +328,12 @@ document.addEventListener("DOMContentLoaded", function () {
             orderable: false,
             render: function (data, type, row) {
               
-              let buttons = `<button class="btn-action edit" data-staff-id="${row.id}">✏️ Edit</button>`;
+              let buttons = `<button class="btn-action view" data-staff-id="${row.id}">👁️ View</button> <button class="btn-action edit" data-staff-id="${row.id}">✏️ Edit</button>`;
 
               if (row.status === "approved") {
                 // If staff is approved, add an enabled Print ID button
                 const printUrl = `${BASE_URL}id_card.php?staff_id=${row.id}`;
-                buttons += ` <a href="${printUrl}" target="_blank" class="btn-action view" title="Print ID Card">🖨️ Print ID</a>`;
+                buttons += ` <a href="${printUrl}" target="_blank" class="btn-action print" title="Print ID Card">🖨️ Print ID</a>`;
               } else {
                 // If not approved, add a disabled button
                 buttons += ` <button class="btn-action" title="ID card not available" disabled>🖨️ Print ID</button>`;
@@ -234,9 +345,14 @@ document.addEventListener("DOMContentLoaded", function () {
         ],
       });
       $("#portal_staff_table tbody").on("click", ".btn-action.edit", function () {
-    const staffId = $(this).data("staff-id");
-    openEditStaffModal(staffId);
-  });
+        const staffId = $(this).data("staff-id");
+        openEditStaffModal(staffId);
+      });
+      
+      $("#portal_staff_table tbody").on("click", ".btn-action.view", function () {
+        const staffId = $(this).data("staff-id");
+        openViewStaffModal(staffId);
+      });
     }
   }
 

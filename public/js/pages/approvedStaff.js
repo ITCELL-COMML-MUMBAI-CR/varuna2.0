@@ -144,6 +144,7 @@ document.addEventListener("DOMContentLoaded", function () {
     editDocFieldsContainer.innerHTML += `
         <div class="input-group"><label>Profile Image</label><div class="current-doc-link">Current: <a href="${BASE_URL}uploads/staff/${s.profile_image}" target="_blank">View File</a></div><input type="file" name="profile_image" accept="image/*"></div>
         <div class="input-group"><label>Signature Image</label><div class="current-doc-link">Current: <a href="${BASE_URL}uploads/staff/${s.signature_image}" target="_blank">View File</a></div><input type="file" name="signature_image" accept="image/*"></div>
+        <div class="input-group"><label>Aadhar Card Image</label><div class="current-doc-link">Current: <a href="${BASE_URL}uploads/staff/${s.adhar_card_image}" target="_blank">View File</a></div><input type="file" name="adhar_card_image" accept="image/*"></div>
         <div class="input-group"></div>
     `;
 

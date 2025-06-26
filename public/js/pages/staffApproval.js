@@ -309,6 +309,8 @@ document.addEventListener("DOMContentLoaded", function () {
         }" target="_blank"><img src="${BASE_URL}uploads/staff/${
           s.medical_image
         }" class="modal-doc-img" alt="Medical Fitness"></a></div>`;
+      if (s.adhar_card_image)
+        modalHTML += `<div class="modal-doc-item"><label>Aadhaar Card</label><a href="${BASE_URL}uploads/staff/${s.adhar_card_image}" target="_blank"><img src="${BASE_URL}uploads/staff/${s.adhar_card_image}" class="modal-doc-img" alt="Aadhaar Card"></a></div>`;
       if (s.ta_image)
         modalHTML += `<div class="modal-doc-item"><label>TA Document</label><a href="${BASE_URL}uploads/staff/${s.ta_image}" target="_blank"><img src="${BASE_URL}uploads/staff/${s.ta_image}" class="modal-doc-img" alt="TA Document"></a></div>`;
       if (s.ppo_image)
@@ -385,6 +387,7 @@ document.addEventListener("DOMContentLoaded", function () {
       editDocFieldsContainer.innerHTML += `
         <div class="input-group"><label>Profile Image</label><div class="current-doc-link">Current: <a href="${BASE_URL}uploads/staff/${s.profile_image}" target="_blank">View File</a></div><input type="file" name="profile_image" accept="image/*"></div>
         <div class="input-group"><label>Signature Image</label><div class="current-doc-link">Current: <a href="${BASE_URL}uploads/staff/${s.signature_image}" target="_blank">View File</a></div><input type="file" name="signature_image" accept="image/*"></div>
+        <div class="input-group"><label>Aadhar Card Image</label><div class="current-doc-link">Current: <a href="${BASE_URL}uploads/staff/${s.adhar_card_image}" target="_blank">View File</a></div><input type="file" name="adhar_card_image" accept="image/*"></div>
         <div class="input-group"></div>
     `;
 
