@@ -33,7 +33,7 @@ try {
     // 4. File Upload Processing (using the existing helper function)
     $upload_dir = __DIR__ . '/../../../public/uploads/staff/';
     $uploaded_files = [];
-    $doc_types = ['police', 'medical', 'ta', 'ppo', 'profile', 'signature'];
+    $doc_types = ['police', 'medical', 'ta', 'ppo', 'profile', 'signature', 'aadhar'];
 
     foreach ($doc_types as $doc_type) {
         $field_name = $doc_type . '_image';
@@ -49,10 +49,10 @@ try {
 
     // 5. Database Insertion
     $sql = "INSERT INTO varuna_staff 
-                (id, contract_id, name, designation, contact, adhar_card_number, status,
+                (id, contract_id, name, designation, contact, adhar_card_number, adhar_card_image, status,
                  police_image, police_issue_date, police_expiry_date, medical_image, medical_issue_date, medical_expiry_date,
                  ta_image, ppo_image, profile_image, signature_image) 
-            VALUES (:id, :contract_id, :name, :designation, :contact, :adhar_card_number, 'pending',
+            VALUES (:id, :contract_id, :name, :designation, :contact, :adhar_card_number, :adhar_card_image, 'pending',
                      :police_image, :police_issue_date, :police_expiry_date, :medical_image, :medical_issue_date, :medical_expiry_date,
                      :ta_image, :ppo_image, :profile_image, :signature_image)";
     
@@ -70,13 +70,14 @@ try {
         'ta_image' => $uploaded_files['ta_image'] ?? null,
         'ppo_image' => $uploaded_files['ppo_image'] ?? null,
         'profile_image' => $uploaded_files['profile_image'] ?? null,
-        'signature_image' => $uploaded_files['signature_image'] ?? null
+        'signature_image' => $uploaded_files['signature_image'] ?? null,
+        'adhar_card_image' => $uploaded_files['adhar_card_image'] ?? null
     ];
     $stmt->execute($data);
 
     log_activity($pdo, 'PORTAL_STAFF_ADD', ['details' => "Licensee {$_SESSION['licensee_name']} added staff {$data['name']} to contract $contract_id"]);
     
-    echo json_encode(['success' => true, 'message' => 'Staff added successfully! The application has been sent for approval.', 'new_csrf_token' => generate_csrf_token()]);
+    echo json_encode(['success' => true, 'message' => 'Staff added successfully! The application has been sent for approval.', 'new_csrf_token' => generate_csrf_token(), 'UploadedFiles' => $uploaded_files]);
 
 } catch (Exception $e) {
     http_response_code($e->getCode() > 0 ? $e->getCode() : 500);

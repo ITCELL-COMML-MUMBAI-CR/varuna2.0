@@ -2,3 +2,4 @@
 public/.htaccess
 public/uploads/
 config.php
+logs/error.log

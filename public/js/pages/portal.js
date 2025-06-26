@@ -23,12 +23,13 @@ document.addEventListener("DOMContentLoaded", function () {
         let designationOptions = designations.map(d => `<option value="${d}" ${data.designation == d ? 'selected' : ''}>${d}</option>`).join('');
     
         let docFieldsHTML = '';
-        const docMapping = { Profile: 'profile', Signature: 'signature', Police: 'police', Medical: 'medical', TA: 'ta', PPO: 'ppo' };
+        const docMapping = { AadharCard: 'aadhar', Profile: 'profile', Signature: 'signature', Police: 'police', Medical: 'medical', TA: 'ta', PPO: 'ppo' };
     
         for (const key in docMapping) {
             const name = docMapping[key];
             const isRequiredOnAdd = !isEdit;
-            const hasExpiry = (key === 'Police' || key === 'Medical');
+            const hasExpiry = (key === 'Police' || key === 'Medical' || key === 'TA');
+            const hasIssue = (key === 'Police' || key === 'Medical' );
             
             // Only render the field if it's required by the contract OR if it's the core Profile/Signature fields
             if ((docReqs && docReqs[key] === 'Y') || key === 'Profile' || key === 'Signature') {
@@ -43,15 +44,21 @@ document.addEventListener("DOMContentLoaded", function () {
                                 <input type="file" name="${name}_image" accept="image/*" ${requiredAttr}>
                              </div>`;
                 
-                if (hasExpiry) {
+                if (hasExpiry && hasIssue) {
                     docFieldsHTML += `
                         <div class="input-group">
                             <label>${key} Issue Date</label>
-                            <input type="date" id="${name}_issue_date" name="${name}_issue_date" value="${data[name + '_issue_date'] || ''}">
+                            <input type="date" id="${name}_issue_date" name="${name}_issue_date" value="${data[name + '_issue_date'] || ''}" required>
                          </div>
                          <div class="input-group">
                             <label>${key} Expiry Date</label>
                             <input type="date" id="${name}_expiry_date" name="${name}_expiry_date" value="${data[name + '_expiry_date'] || ''}" readonly>
+                         </div>`;
+                } else if (hasExpiry) {
+                    docFieldsHTML += `
+                        <div class="input-group">
+                            <label>${key} Expiry Date</label>
+                            <input type="date" id="${name}_expiry_date" name="${name}_expiry_date" value="${data[name + '_expiry_date'] || ''}" required>
                          </div>`;
                 }
             }
@@ -68,7 +75,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     <div class="input-group"><label>Full Name</label><input type="text" name="name" value="${data.name || ''}" required></div>
                     <div class="input-group"><label>Designation</label><select name="designation" required>${designationOptions}</select></div>
                     <div class="input-group"><label>Contact</label><input type="text" name="contact" value="${data.contact || ''}" required></div>
-                    <div class="input-group"><label>Aadhar (Optional)</label><input type="text" name="adhar_card_number" value="${data.adhar_card_number || ''}"></div>
+                    <div class="input-group"><label>Aadhar Number</label><input type="text" name="adhar_card_number" value="${data.adhar_card_number || ''}"></div>
                 </div>
                 
                 <h4 style="margin-top: 15px;">Documents ${isEdit ? '(Upload a file only to replace an existing one)' : ''}</h4>

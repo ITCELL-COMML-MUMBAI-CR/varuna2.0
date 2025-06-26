@@ -28,7 +28,7 @@ try {
     }
     
     // Fetch document requirements for the contract's type
-    $doc_stmt = $pdo->prepare("SELECT Police, Medical, TA, PPO FROM varuna_contract_types WHERE ContractType = ?");
+    $doc_stmt = $pdo->prepare("SELECT Police, Medical, TA, PPO, AadharCard FROM varuna_contract_types WHERE ContractType = ?");
     $doc_stmt->execute([$contract['contract_type']]);
     $doc_reqs = $doc_stmt->fetch();
 

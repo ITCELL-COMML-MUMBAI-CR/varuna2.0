@@ -21,7 +21,7 @@ try {
     $pdo->beginTransaction();
 
     // 1. Fetch the staff record to get filenames for deletion.
-    $stmt = $pdo->prepare("SELECT profile_image, signature_image, police_image, medical_image, ta_image, ppo_image FROM varuna_staff WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT profile_image, signature_image, police_image, medical_image, ta_image, ppo_image, adhar_card_image FROM varuna_staff WHERE id = ?");
     $stmt->execute([$staff_id]);
     $files_to_delete = $stmt->fetch();
 
