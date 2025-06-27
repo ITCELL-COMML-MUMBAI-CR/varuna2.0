@@ -72,7 +72,7 @@ document.addEventListener("DOMContentLoaded", function () {
       });
   }
 
-  function buildEditForm(tableName, data) {
+  async function buildEditForm(tableName, data) {
     let title = `Edit ${tableName.replace("varuna_", "").replace(/_/g, " ")}`;
     editModalTitle.textContent = title.replace(/\b\w/g, (l) => l.toUpperCase());
     let formContent = `<form id="editRecordForm" action="${BASE_URL}api/admin/update_record.php" method="POST">
@@ -85,21 +85,43 @@ document.addEventListener("DOMContentLoaded", function () {
         formContent += `<input type="hidden" name="id_column" value="id"><input type="hidden" name="id_value" value="${data.id}"><div class="input-group"><label>Designation Name</label><input type="text" name="designation_name" value="${data.designation_name}" required></div>`;
         break;
       case "varuna_users":
-        formContent += `<input type="hidden" name="id_column" value="id"><input type="hidden" name="id_value" value="${
-          data.id
-        }"><div class="details-grid"><div class="input-group"><label>Username</label><input type="text" name="username" value="${
-          data.username
-        }" required></div><div class="input-group"><label>Role</label><select name="role" required><option value="ADMIN" ${
-          data.role === "ADMIN" ? "selected" : ""
-        }>ADMIN</option><option value="SCI" ${
-          data.role === "SCI" ? "selected" : ""
-        }>SCI</option><option value="VIEWER" ${
-          data.role === "VIEWER" ? "selected" : ""
-        }>VIEWER</option></select></div><div class="input-group"><label>Geographical Section</label><input type="text" name="section" value="${
-          data.section || ""
-        }"></div><div class="input-group"><label>Department Section</label><input type="text" name="department_section" value="${
-          data.department_section || ""
-        }"></div></div>`;
+        let formData;
+        try {
+          const response = await fetch(`${BASE_URL}api/admin/get_form_data.php`);
+          formData = await response.json();
+        } catch (error) {
+          console.error('Error fetching form data:', error);
+          formData = { sections: [], department_sections: [] };
+        }
+
+        formContent += `<input type="hidden" name="id_column" value="id"><input type="hidden" name="id_value" value="${data.id}">
+        <div class="details-grid">
+          <div class="input-group"><label>Username</label><input type="text" name="username" value="${data.username}" required></div>
+          <div class="input-group"><label>Role</label>
+            <select name="role" required>
+              <option value="ADMIN" ${data.role === "ADMIN" ? "selected" : ""}>ADMIN</option>
+              <option value="SCI" ${data.role === "SCI" ? "selected" : ""}>SCI</option>
+              <option value="VIEWER" ${data.role === "VIEWER" ? "selected" : ""}>VIEWER</option>
+            </select>
+          </div>
+          <div class="input-group"><label>Geographical Section</label>
+            <select name="section" required>
+              <option value="" ${!data.section ? "selected" : ""}>Select Section</option>
+              <option value="Train" ${data.section === "Train" ? "selected" : ""}>Train</option>
+              ${formData.sections ? formData.sections.map(section => 
+                `<option value="${section}" ${data.section === section ? "selected" : ""}>${section}</option>`
+              ).join('') : ''}
+            </select>
+          </div>
+          <div class="input-group"><label>Department Section</label>
+            <select name="department_section" required>
+              <option value="" ${!data.department_section ? "selected" : ""}>Select Department Section</option>
+              ${formData.department_sections ? formData.department_sections.map(section => 
+                `<option value="${section}" ${data.department_section === section ? "selected" : ""}>${section}</option>`
+              ).join('') : ''}
+            </select>
+          </div>
+        </div>`;
         break;
         case 'varuna_contract_types':
                 formContent += `
@@ -231,7 +253,228 @@ document.addEventListener("DOMContentLoaded", function () {
             renderActions(r, { name: "varuna_users", id_column: "id" }),
         },
       ],
+      initComplete: function() {
+        // Add a button to view all users data
+        const wrapper = $(this).closest('.dataTables_wrapper');
+        $('<button class="btn-login" style="margin-bottom: 10px;">View All Users Data</button>')
+          .prependTo(wrapper)
+          .on('click', function() {
+            // Show modal with all users data
+            showUsersDataModal();
+          });
+      }
     });
+  }
+  
+  // Function to show modal with all users data
+  function showUsersDataModal() {
+    editModalTitle.textContent = "All Users Data";
+    editModalBody.innerHTML = "<p>Loading users data...</p>";
+    editModal.classList.remove("hidden");
+    
+    fetch(`${BASE_URL}api/admin/get_users_data.php`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          const users = data.users;
+          const sections = data.sections;
+          const departmentSections = data.department_sections;
+          
+          let content = `
+            <div class="users-data-summary">
+              <h3>Users Summary</h3>
+              <p>Total Users: ${users.length}</p>
+              
+              <h4>Geographical Sections</h4>
+              <ul>
+                <li>Train</li>
+                ${sections.map(section => `<li>${section}</li>`).join('')}
+              </ul>
+              
+              <h4>Department Sections</h4>
+              <ul>
+                ${departmentSections.map(section => `<li>${section}</li>`).join('')}
+              </ul>
+              
+              <h4>Users by Role</h4>
+              <ul>
+                <li>ADMIN: ${users.filter(u => u.role === 'ADMIN').length}</li>
+                <li>SCI: ${users.filter(u => u.role === 'SCI').length}</li>
+                <li>VIEWER: ${users.filter(u => u.role === 'VIEWER').length}</li>
+              </ul>
+              
+              <h4>Users by Section</h4>
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Section</th>
+                    <th>Count</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${['Train', ...sections].map(section => {
+                    const count = users.filter(u => u.section === section).length;
+                    return count > 0 ? `<tr><td>${section}</td><td>${count}</td></tr>` : '';
+                  }).join('')}
+                </tbody>
+              </table>
+              
+              <h4>Users by Department Section</h4>
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Department Section</th>
+                    <th>Count</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${departmentSections.map(section => {
+                    const count = users.filter(u => u.department_section === section).length;
+                    return count > 0 ? `<tr><td>${section}</td><td>${count}</td></tr>` : '';
+                  }).join('')}
+                </tbody>
+              </table>
+              
+              <h4>Complete User List</h4>
+              <div class="filter-controls">
+                <div class="search-box">
+                  <input type="text" id="userSearchInput" placeholder="Search users..." class="form-control">
+                </div>
+                <div class="filter-selects">
+                  <select id="roleFilter" class="form-control">
+                    <option value="">All Roles</option>
+                    <option value="ADMIN">ADMIN</option>
+                    <option value="SCI">SCI</option>
+                    <option value="VIEWER">VIEWER</option>
+                  </select>
+                  <select id="sectionFilter" class="form-control">
+                    <option value="">All Geographical Sections</option>
+                    <option value="Train">Train</option>
+                    ${sections.map(section => `<option value="${section}">${section}</option>`).join('')}
+                  </select>
+                  <select id="deptSectionFilter" class="form-control">
+                    <option value="">All Department Sections</option>
+                    ${departmentSections.map(section => `<option value="${section}">${section}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="export-controls">
+                  <button id="exportUsersCSV" class="btn-login">Export to CSV</button>
+                </div>
+              </div>
+              <table id="usersDataTable" class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Geographical Section</th>
+                    <th>Department Section</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${users.map(user => `
+                    <tr data-role="${user.role}" data-section="${user.section || ''}" data-dept-section="${user.department_section || ''}">
+                      <td>${user.id}</td>
+                      <td>${user.username}</td>
+                      <td>${user.role}</td>
+                      <td>${user.section || '-'}</td>
+                      <td>${user.department_section || '-'}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+              <script>
+                // Initialize filtering functionality after the modal is shown
+                setTimeout(() => {
+                  const searchInput = document.getElementById('userSearchInput');
+                  const roleFilter = document.getElementById('roleFilter');
+                  const sectionFilter = document.getElementById('sectionFilter');
+                  const deptSectionFilter = document.getElementById('deptSectionFilter');
+                  const table = document.getElementById('usersDataTable');
+                  const rows = table.querySelectorAll('tbody tr');
+                  
+                  function filterTable() {
+                    const searchText = searchInput.value.toLowerCase();
+                    const roleValue = roleFilter.value;
+                    const sectionValue = sectionFilter.value;
+                    const deptSectionValue = deptSectionFilter.value;
+                    
+                    rows.forEach(row => {
+                      const rowData = row.textContent.toLowerCase();
+                      const rowRole = row.getAttribute('data-role');
+                      const rowSection = row.getAttribute('data-section');
+                      const rowDeptSection = row.getAttribute('data-dept-section');
+                      
+                      const matchesSearch = searchText === '' || rowData.includes(searchText);
+                      const matchesRole = roleValue === '' || rowRole === roleValue;
+                      const matchesSection = sectionValue === '' || rowSection === sectionValue;
+                      const matchesDeptSection = deptSectionValue === '' || rowDeptSection === deptSectionValue;
+                      
+                      if (matchesSearch && matchesRole && matchesSection && matchesDeptSection) {
+                        row.style.display = '';
+                      } else {
+                        row.style.display = 'none';
+                      }
+                    });
+                  }
+                  
+                  searchInput.addEventListener('input', filterTable);
+                  roleFilter.addEventListener('change', filterTable);
+                  sectionFilter.addEventListener('change', filterTable);
+                  deptSectionFilter.addEventListener('change', filterTable);
+                  
+                  // Export to CSV functionality
+                  document.getElementById('exportUsersCSV').addEventListener('click', function() {
+                    // Get visible rows only (respecting current filters)
+                    const visibleRows = Array.from(rows).filter(row => row.style.display !== 'none');
+                    
+                    if (visibleRows.length === 0) {
+                      alert('No data to export. Please adjust your filters.');
+                      return;
+                    }
+                    
+                    // Create CSV content
+                    const headers = ['ID', 'Username', 'Role', 'Geographical Section', 'Department Section'];
+                    let csvContent = headers.join(',') + '\n';
+                    
+                    visibleRows.forEach(row => {
+                      const cells = row.querySelectorAll('td');
+                      const rowData = Array.from(cells).map(cell => {
+                        // Escape commas and quotes in cell content
+                        let content = cell.textContent.trim();
+                        if (content.includes(',') || content.includes('"')) {
+                          content = '"' + content.replace(/"/g, '""') + '"';
+                        }
+                        return content;
+                      });
+                      csvContent += rowData.join(',') + '\n';
+                    });
+                    
+                    // Create download link
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', 'varuna_users_export.csv');
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  });
+                }, 100);
+              </script>
+            </div>
+          `;
+          
+          editModalBody.innerHTML = content;
+        } else {
+          editModalBody.innerHTML = "<p>Error loading users data</p>";
+        }
+      })
+      .catch(err => {
+        console.error("Error fetching users data:", err);
+        editModalBody.innerHTML = "<p>Error loading users data</p>";
+      });
   }
 
   // Event delegation for all form submissions
@@ -283,9 +526,9 @@ document.addEventListener("DOMContentLoaded", function () {
           )}`
         )
           .then((res) => res.json())
-          .then((response) => {
+          .then(async (response) => { // Make the callback async
             if (response.success) {
-              buildEditForm(table, response.data);
+              await buildEditForm(table, response.data); // Await the async function
             }
           });
       }

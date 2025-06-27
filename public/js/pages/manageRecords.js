@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", function () {
     return buttons;
   }
 
-  function buildEditForm(tableName, data) {
+  async function buildEditForm(tableName, data) {
     let title = `Edit ${tableName.replace("varuna_", "").replace(/_/g, " ")}`;
     editModalTitle.textContent = title.replace(/\b\w/g, (l) => l.toUpperCase());
 
@@ -57,6 +57,22 @@ document.addEventListener("DOMContentLoaded", function () {
     let formContent = `<form id="editRecordForm" action="${BASE_URL}api/admin/update_record.php" method="POST">
             <input type="hidden" name="csrf_token" value="${csrfToken}">
             <input type="hidden" name="table_name" value="${tableName}">`;
+
+    // Fetch form data if editing a user
+    let formData = {};
+    if (tableName === 'varuna_users') {
+        try {
+            const response = await fetch(`${BASE_URL}api/admin/get_form_data.php`);
+            formData = await response.json();
+            if (!formData.success) {
+                throw new Error('Failed to load form data');
+            }
+        } catch (error) {
+            console.error('Error loading form data:', error);
+            Swal.fire('Error', 'Failed to load form data', 'error');
+            return;
+        }
+    }
 
     switch (tableName) {
       case "varuna_licensee":
@@ -141,6 +157,47 @@ document.addEventListener("DOMContentLoaded", function () {
                             }>Terminated</option>
                         </select>
                     </div>`;
+        break;
+
+      case "varuna_users":
+        formContent += `
+            <input type="hidden" name="id_column" value="id">
+            <input type="hidden" name="id_value" value="${data.id}">
+            <div class="input-group">
+                <label>Username</label>
+                <input type="text" name="username" value="${data.username || ''}" required>
+            </div>
+            <div class="input-group">
+                <label>Role</label>
+                <select name="role" required>
+                    <option value="ADMIN" ${data.role === 'ADMIN' ? 'selected' : ''}>ADMIN</option>
+                    <option value="SCI" ${data.role === 'SCI' ? 'selected' : ''}>SCI</option>
+                    <option value="VIEWER" ${data.role === 'VIEWER' ? 'selected' : ''}>VIEWER</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Designation</label>
+                <input type="text" name="designation" value="${data.designation || ''}">
+            </div>
+            <div class="input-group">
+                <label>Geographical Section</label>
+                <select name="section" required>
+                    <option value="">-- Select Section --</option>
+                    <option value="Train" ${data.section === 'Train' ? 'selected' : ''}>Train</option>
+                    ${formData.sections?.map(section => 
+                        `<option value="${section}" ${data.section === section ? 'selected' : ''}>${section}</option>`
+                    ).join('')}
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Department Section</label>
+                <select name="department_section" required>
+                    <option value="">-- Select Department --</option>
+                    ${formData.department_sections?.map(dept => 
+                        `<option value="${dept}" ${data.department_section === dept ? 'selected' : ''}>${dept}</option>`
+                    ).join('')}
+                </select>
+            </div>`;
         break;
     }
 

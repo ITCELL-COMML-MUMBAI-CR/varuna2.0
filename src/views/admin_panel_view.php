@@ -3,9 +3,12 @@ if (!defined('VARUNA_ENTRY_POINT') || $_SESSION['role'] !== 'ADMIN') {
     require_once __DIR__ . '/errors/404.php';
     exit();
 }
+
 // This fetch is now only needed for the "Change Password" form
 $users = $pdo->query("SELECT id, username FROM varuna_users ORDER BY username ASC")->fetchAll();
 $contract_types_list = $pdo->query("SELECT ContractType FROM varuna_contract_types ORDER BY ContractType ASC")->fetchAll(PDO::FETCH_COLUMN);
+$sections = $pdo->query("SELECT `name` FROM `Section` ORDER BY `name` ASC")->fetchAll(PDO::FETCH_COLUMN);
+$department_sections = $pdo->query("SELECT DISTINCT `Section` FROM `varuna_contract_types` ORDER BY `Section` ASC")->fetchAll(PDO::FETCH_COLUMN);
 ?>
 <?php include __DIR__ . '/header.php'; ?>
 <?php include __DIR__ . '/navbar.php'; ?>
@@ -166,10 +169,19 @@ $contract_types_list = $pdo->query("SELECT ContractType FROM varuna_contract_typ
                                     </div>
                                     <div class="input-group"><label>Designation</label><input type="text"
                                             name="designation"></div>
-                                    <div class="input-group"><label>Geographical Section</label><input type="text"
-                                            name="section" placeholder="e.g., CSMT, PNVL"></div>
-                                    <div class="input-group"><label>Department Section</label><input type="text"
-                                            name="department_section" placeholder="e.g., CATG, COG"></div>
+                                    <div class="input-group"><label>Geographical Section</label><select name="section">
+    <option value="">-- Select Section --</option>
+    <option value="Train">Train</option>
+    <?php foreach ($sections as $section): ?>
+        <option value="<?php echo htmlspecialchars($section); ?>"><?php echo htmlspecialchars($section); ?></option>
+    <?php endforeach; ?>
+</select></div>
+<div class="input-group"><label>Department Section</label><select name="department_section">
+    <option value="">-- Select Department --</option>
+    <?php foreach ($department_sections as $dept_section): ?>
+        <option value="<?php echo htmlspecialchars($dept_section); ?>"><?php echo htmlspecialchars($dept_section); ?></option>
+    <?php endforeach; ?>
+</select></div>
                                 </div>
                                 <button type="submit" class="btn-login" style="margin-top: 20px;">Create User</button>
                             </form>

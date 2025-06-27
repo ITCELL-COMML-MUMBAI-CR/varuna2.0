@@ -478,10 +478,44 @@ body {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.6);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     z-index: 1000;
     padding: 20px;
+    overflow-y: auto;
+}
+
+/* Specific styles for staff edit modal */
+#staff_edit_modal {
+    padding: 10px;
+}
+
+#edit_modal_body {
+    padding: 10px;
+}
+
+#edit_modal_body .details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+#edit_modal_body .input-group {
+    margin-bottom: 10px;
+}
+
+#edit_modal_body h4 {
+    margin-top: 20px;
+    margin-bottom: 15px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #eee;
+}
+
+#edit_modal_body .current-doc-link {
+    font-size: 0.85rem;
+    margin-bottom: 5px;
+    color: #555;
 }
 
 .modal-content {
@@ -495,6 +529,8 @@ body {
     position: relative;
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     animation: slideIn 0.4s ease-out;
+    max-height: 85vh;
+    overflow-y: auto;
 }
 
 /* The close button (X) */
@@ -875,6 +911,124 @@ body {
  * FINAL Polished & Animated Navbar
  * ===================================
  */
+
+/* Users Data Summary Styles */
+.users-data-summary {
+  padding: 15px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.users-data-summary h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #2c3e50;
+  border-bottom: 2px solid #3498db;
+  padding-bottom: 8px;
+}
+
+.users-data-summary h4 {
+  margin-top: 20px;
+  margin-bottom: 10px;
+  color: #2c3e50;
+  border-left: 3px solid #3498db;
+  padding-left: 10px;
+}
+
+.users-data-summary ul {
+  list-style-type: none;
+  padding-left: 15px;
+  margin-bottom: 15px;
+}
+
+.users-data-summary ul li {
+  padding: 5px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.users-data-summary .data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.users-data-summary .data-table th,
+.users-data-summary .data-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.users-data-summary .data-table th {
+  background-color: #f5f5f5;
+  font-weight: bold;
+}
+
+.users-data-summary .data-table tr:hover {
+  background-color: #f9f9f9;
+}
+
+.users-data-summary .filter-controls {
+  margin-bottom: 15px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.users-data-summary .export-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+  width: 100%;
+}
+
+.users-data-summary .export-controls button {
+  padding: 8px 15px;
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.users-data-summary .export-controls button:hover {
+  background-color: #2ecc71;
+}
+
+.users-data-summary .search-box {
+  flex: 1 1 100%;
+  margin-bottom: 10px;
+}
+
+.users-data-summary .filter-selects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
+}
+
+.users-data-summary .filter-selects select {
+  flex: 1;
+  min-width: 150px;
+}
+
+.users-data-summary input[type="text"],
+.users-data-summary select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.users-data-summary input[type="text"]:focus,
+.users-data-summary select:focus {
+  border-color: #3498db;
+  outline: none;
+  box-shadow: 0 0 3px rgba(52, 152, 219, 0.5);
+}
 .navbar {
     padding: 0;
     background-color: #fff;
@@ -1091,6 +1245,18 @@ body {
     .modal-content {
         width: 95%;
         padding: 20px 15px;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    
+    #staff_edit_modal .modal-content {
+        max-height: 85vh;
+        overflow-y: auto;
+    }
+    
+    #edit_modal_body {
+        max-height: calc(85vh - 100px);
+        overflow-y: auto;
     }
 
     /* --- Admin Panel on Mobile --- */
