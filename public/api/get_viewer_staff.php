@@ -23,8 +23,8 @@ try {
     $filter_station = $_POST['filter_station'] ?? '';
     $filter_section = $_POST['filter_section'] ?? '';
 
-    // Base query with all necessary joins
-    $base_sql = "FROM varuna_staff s
+    // Common part of the query with all necessary joins
+    $from_and_joins = "FROM varuna_staff s
                  LEFT JOIN contracts c ON s.contract_id = c.id
                  LEFT JOIN varuna_licensee l ON c.licensee_id = l.id";
     
@@ -64,11 +64,11 @@ try {
     }
 
     // Get total records count (without filtering)
-    $totalRecords_stmt = $pdo->query("SELECT COUNT(s.id) " . $base_sql);
+    $totalRecords_stmt = $pdo->query("SELECT COUNT(s.id) " . $from_and_joins);
     $totalRecords = $totalRecords_stmt->fetchColumn();
     
     // Get total records count (with filtering)
-    $totalFiltered_stmt = $pdo->prepare("SELECT COUNT(s.id) " . $base_sql . $where_sql);
+    $totalFiltered_stmt = $pdo->prepare("SELECT COUNT(s.id) " . $from_and_joins . $where_sql);
     $totalFiltered_stmt->execute($params);
     $totalFiltered = $totalFiltered_stmt->fetchColumn();
 
@@ -77,7 +77,7 @@ try {
                     s.id, s.profile_image, s.name, s.designation, s.contact, s.adhar_card_number, s.status,
                     s.police_image, s.police_expiry_date, s.medical_image, s.medical_expiry_date,
                     c.contract_name, c.station_code, l.name as licensee_name "
-                 . $base_sql . $where_sql . " ORDER BY s.name ASC LIMIT ? OFFSET ?";
+                 . $from_and_joins . $where_sql . " ORDER BY s.name ASC LIMIT ? OFFSET ?";
     
     $params[] = (int)$length;
     $params[] = (int)$start;
@@ -94,10 +94,11 @@ try {
         SUM(CASE WHEN s.status = 'pending' THEN 1 ELSE 0 END) as pending_count,
         SUM(CASE WHEN s.status = 'approved' THEN 1 ELSE 0 END) as approved_count,
         SUM(CASE WHEN s.status = 'terminated' THEN 1 ELSE 0 END) as terminated_count
-        FROM varuna_staff s " . $base_sql . $where_sql;
+        " . $from_and_joins . $where_sql;
     
     $statusCountStmt = $pdo->prepare($statusCountQuery);
-    $statusCountStmt->execute($params);
+    $status_params = array_slice($params, 0, -2); // Exclude LIMIT and OFFSET
+    $statusCountStmt->execute($status_params);
     $statusCounts = $statusCountStmt->fetch(PDO::FETCH_ASSOC);
 
     // Prepare the final response for DataTables
