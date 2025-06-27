@@ -34,7 +34,7 @@ document.addEventListener("DOMContentLoaded", function () {
         document
           .querySelector('meta[name="csrf-token"]')
           .setAttribute("content", newToken); // Update the meta tag in the DOM
-        console.log("CSRF Token refreshed.");
+        //console.log("CSRF Token refreshed.");
       }
     }
     // Reusable function to call the update_staff_status API
@@ -78,16 +78,44 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     });
 
+    // Add status count displays above each table
+    const pendingCountHtml = `
+        <div class="status-counts" style="margin-bottom: 15px;">
+            <span class="status-count">Total Pending: <span id="pending_count">0</span></span>
+        </div>
+    `;
+    $("#pending_staff_table").before(pendingCountHtml);
+
+    const rejectedCountHtml = `
+        <div class="status-counts" style="margin-bottom: 15px;">
+            <span class="status-count">Total Rejected: <span id="rejected_count">0</span></span>
+        </div>
+    `;
+    $("#rejected_staff_table").before(rejectedCountHtml);
+
+    const terminatedCountHtml = `
+        <div class="status-counts" style="margin-bottom: 15px;">
+            <span class="status-count">Total Terminated: <span id="terminated_count">0</span></span>
+        </div>
+    `;
+    $("#terminated_staff_table").before(terminatedCountHtml);
+
     pendingTable = $("#pending_staff_table").DataTable({
-      ajax: { url: `${BASE_URL}api/get_pending_staff.php`, dataSrc: "data" },
+      ajax: { 
+        url: `${BASE_URL}api/get_pending_staff.php`, 
+        dataSrc: function(json) {
+            $('#pending_count').text(json.data.length);
+            return json.data;
+        }
+      },
       columns: [
         {
-                data: "id",
-                orderable: false,
-                render: function (data) {
-                    return `<input type="checkbox" class="staff-checkbox" value="${data}">`;
-                }
-            },
+          data: "id",
+          orderable: false,
+          render: function (data) {
+            return `<input type="checkbox" class="staff-checkbox" value="${data}">`;
+          }
+        },
         { data: "id" },
         { data: "name" },
         { data: "designation" },
@@ -102,7 +130,13 @@ document.addEventListener("DOMContentLoaded", function () {
       "order": [[ 1, 'asc' ]]
     });
  terminatedTable = $("#terminated_staff_table").DataTable({
-    ajax: { url: `${BASE_URL}api/get_terminated_staff.php`, dataSrc: "data" },
+    ajax: { 
+      url: `${BASE_URL}api/get_terminated_staff.php`, 
+      dataSrc: function(json) {
+          $('#terminated_count').text(json.data.length);
+          return json.data;
+      }
+    },
     columns: [
         { data: "id" },
         { data: "name" },
@@ -119,7 +153,13 @@ document.addEventListener("DOMContentLoaded", function () {
     ],
   });
     rejectedTable = $("#rejected_staff_table").DataTable({
-      ajax: { url: `${BASE_URL}api/get_rejected_staff.php`, dataSrc: "data" },
+      ajax: { 
+        url: `${BASE_URL}api/get_rejected_staff.php`, 
+        dataSrc: function(json) {
+            $('#rejected_count').text(json.data.length);
+            return json.data;
+        }
+      },
       columns: [
         { data: "id" },
         { data: "name" },
@@ -127,9 +167,14 @@ document.addEventListener("DOMContentLoaded", function () {
         { data: "remark" },
         { data: "remarked_by" },
         {
-          data: null,
+          data: "id",
           orderable: false,
-          defaultContent: `<button class="btn-action edit" title="Edit and Resubmit">✏️ Edit</button>`,
+          render: function(data, type, row) {
+            return `
+              <button class="btn-action edit" data-staff-id="${data}" title="Edit and Resubmit">✏️</button>
+              <button class="btn-action reject" data-staff-id="${data}" title="Delete Staff">🗑️</button>
+            `;
+          }
         },
       ],
     });
@@ -174,6 +219,41 @@ document.addEventListener("DOMContentLoaded", function () {
           }
         });
     });
+
+    // Listener for the "Delete" button in the REJECTED table
+    $("#rejected_staff_table tbody").on("click", "button.reject", function () {
+      const staffId = $(this).data("staff-id");
+      Swal.fire({
+        title: "Are you sure?",
+        text: "You are about to permanently delete this staff member. This action cannot be undone!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Yes, delete it!",
+        confirmButtonColor: "#d9534f",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          const formData = new FormData();
+          formData.append("staff_id", staffId);
+          formData.append("csrf_token", csrfToken);
+          fetch(`${BASE_URL}api/delete_staff.php`, {
+            method: "POST",
+            body: formData,
+          })
+            .then((res) => res.json())
+            .then((response) => {
+              refreshToken(response.new_csrf_token);
+              if (response.success) {
+                refreshToken(response.new_csrf_token);
+                Swal.fire("Deleted!", response.message, "success");
+                reloadAllTables();
+              } else {
+                Swal.fire("Error!", response.message, "error");
+              }
+            });
+        }
+      });
+    });
+
     $("#terminated_staff_table tbody").on("click", "button.edit", function () {
     const rowData = terminatedTable.row($(this).parents("tr")).data();
     if (!rowData) return;

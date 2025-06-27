@@ -89,12 +89,24 @@ try {
     $data_stmt->execute();
     $staff_list = $data_stmt->fetchAll();
 
+    // Get status counts
+    $statusCountQuery = "SELECT 
+        SUM(CASE WHEN s.status = 'pending' THEN 1 ELSE 0 END) as pending_count,
+        SUM(CASE WHEN s.status = 'approved' THEN 1 ELSE 0 END) as approved_count,
+        SUM(CASE WHEN s.status = 'terminated' THEN 1 ELSE 0 END) as terminated_count
+        FROM varuna_staff s " . $base_sql . $where_sql;
+    
+    $statusCountStmt = $pdo->prepare($statusCountQuery);
+    $statusCountStmt->execute($params);
+    $statusCounts = $statusCountStmt->fetch(PDO::FETCH_ASSOC);
+
     // Prepare the final response for DataTables
     echo json_encode([
         "draw" => intval($draw),
         "recordsTotal" => intval($totalRecords),
         "recordsFiltered" => intval($totalFiltered),
-        "data" => $staff_list
+        "data" => $staff_list,
+        "statusCounts" => $statusCounts
     ]);
 
 } catch (Exception $e) {

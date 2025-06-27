@@ -299,6 +299,18 @@ document.addEventListener("DOMContentLoaded", function () {
     selectedContractId = contractId;
     staffSection.classList.remove("hidden");
 
+    // Add status count display if it doesn't exist
+    if (!document.querySelector('.status-counts')) {
+        const statusCountHtml = `
+            <div class="status-counts" style="margin-bottom: 15px;">
+                <span class="status-count">Pending: <span id="pending_count">0</span></span>
+                <span class="status-count">Approved: <span id="approved_count">0</span></span>
+                <span class="status-count">Terminated: <span id="terminated_count">0</span></span>
+            </div>
+        `;
+        staffTable.before(statusCountHtml);
+    }
+
     if (staffDataTable) {
       staffDataTable.ajax
         .url(
@@ -310,7 +322,15 @@ document.addEventListener("DOMContentLoaded", function () {
         processing: true,
         ajax: {
           url: `${BASE_URL}api/portal/get_portal_staff.php?contract_id=${contractId}`,
-          dataSrc: "data",
+          dataSrc: function(json) {
+            // Update status counts
+            if (json.statusCounts) {
+                $('#pending_count').text(json.statusCounts.pending_count);
+                $('#approved_count').text(json.statusCounts.approved_count);
+                $('#terminated_count').text(json.statusCounts.terminated_count);
+            }
+            return json.data;
+          }
         },
         columns: [
           { data: "id" },
@@ -324,34 +344,21 @@ document.addEventListener("DOMContentLoaded", function () {
             },
           },
           {
-            data: null, // Use null for the actions column
+            data: null,
             orderable: false,
             render: function (data, type, row) {
-              
               let buttons = `<button class="btn-action view" data-staff-id="${row.id}">👁️ View</button> <button class="btn-action edit" data-staff-id="${row.id}">✏️ Edit</button>`;
 
               if (row.status === "approved") {
-                // If staff is approved, add an enabled Print ID button
                 const printUrl = `${BASE_URL}id_card.php?staff_id=${row.id}`;
                 buttons += ` <a href="${printUrl}" target="_blank" class="btn-action print" title="Print ID Card">🖨️ Print ID</a>`;
               } else {
-                // If not approved, add a disabled button
                 buttons += ` <button class="btn-action" title="ID card not available" disabled>🖨️ Print ID</button>`;
               }
               return buttons;
-              
             },
           },
         ],
-      });
-      $("#portal_staff_table tbody").on("click", ".btn-action.edit", function () {
-        const staffId = $(this).data("staff-id");
-        openEditStaffModal(staffId);
-      });
-      
-      $("#portal_staff_table tbody").on("click", ".btn-action.view", function () {
-        const staffId = $(this).data("staff-id");
-        openViewStaffModal(staffId);
       });
     }
   }

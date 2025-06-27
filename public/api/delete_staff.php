@@ -42,12 +42,12 @@ try {
     $pdo->commit();
 
     log_activity($pdo, 'STAFF_DELETE_SUCCESS', ['details' => "Permanently deleted staff ID: $staff_id"]);
-    echo json_encode(['success' => true, 'message' => "Staff member $staff_id has been deleted successfully."]);
+    echo json_encode(['success' => true, 'message' => "Staff member $staff_id has been deleted successfully.", 'new_csrf_token' => generate_csrf_token()]);
 
 } catch (Exception $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => $e->getMessage(), 'new_csrf_token' => generate_csrf_token()]);
 }

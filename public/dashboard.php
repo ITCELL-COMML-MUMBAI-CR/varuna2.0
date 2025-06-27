@@ -44,20 +44,87 @@ if (($_SESSION['designation'] ?? '') === 'ASC') {
 
     <!-- 2. Charts and Tables Section -->
     <div class="dashboard-main-grid">
-        <div class="dashboard-card">
+        <!-- <div class="dashboard-card">
             <h3>Staff Status Overview</h3>
             <div class="chart-container">
                 <canvas id="staffStatusChart"></canvas>
             </div>
-        </div>
+        </div> -->
         <div class="dashboard-card" style="grid-column: span 2;">
             <h3>Licensee Breakdown</h3>
             <table id="licensee_breakdown_table" class="display" style="width:100%">
                 <thead>
                     <tr>
                         <th>Licensee Name</th>
+                        <th>Mobile Number</th>
+                        <th>Status</th>
                         <th>Active Contracts</th>
                         <th>Total Staff</th>
+                        <th>Pending Staff</th>
+                        <th>Approved Staff</th>
+                        <th>Terminated Staff</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+
+    <!-- 3. Section-wise and Station-wise Breakdowns -->
+    <div class="dashboard-section">
+        <h2>Detailed Breakdowns</h2>
+        <div class="dashboard-grid-2">
+            <!-- Section-wise Breakdown -->
+            <div class="dashboard-card">
+                <h3>Section-wise Details</h3>
+                <table id="section_breakdown_table" class="display" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Section</th>
+                            <th>Licensees</th>
+                            <th>Contracts</th>
+                            <th>Total Staff</th>
+                            <th>Pending Staff</th>
+                            <th>Approved Staff</th>
+                            <th>Terminated Staff</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+            <!-- Station-wise Breakdown -->
+            <div class="dashboard-card">
+                <h3>Station-wise Details</h3>
+                <table id="station_breakdown_table" class="display" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Station</th>
+                            <th>Licensees</th>
+                            <th>Contracts</th>
+                            <th>Total Staff</th>
+                            <th>Pending Staff</th>
+                            <th>Approved Staff</th>
+                            <th>Terminated Staff</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Contract Type Breakdown -->
+    <div class="dashboard-section">
+        <h2>Contract Type Analysis</h2>
+        <div class="dashboard-card">
+            <h3>Contract Type Details</h3>
+            <table id="contract_type_breakdown_table" class="display" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Contract Type</th>
+                        <th>Licensees</th>
+                        <th>Contracts</th>
+                        <th>Total Staff</th>
+                        <th>Pending Staff</th>
+                        <th>Approved Staff</th>
+                        <th>Terminated Staff</th>
                     </tr>
                 </thead>
             </table>
@@ -72,10 +139,16 @@ if (($_SESSION['designation'] ?? '') === 'ASC') {
     .stat-card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
     .stat-card h2 { font-size: 1.1rem; color: #555; margin-bottom: 10px; }
     .stat-card p { font-size: 2.5rem; font-weight: 700; color: var(--primary-color); }
-    .dashboard-main-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
+    .dashboard-main-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; margin-bottom: 30px; }
+    .dashboard-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
     .dashboard-card { background: #fff; border-radius: 8px; padding: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
     .chart-container { position: relative; height: 300px; }
-    @media (max-width: 992px) { .dashboard-main-grid { grid-template-columns: 1fr; } .dashboard-card { grid-column: auto !important; } }
+    .dashboard-section { margin-bottom: 30px; }
+    .dashboard-section h2 { margin-bottom: 20px; color: #333; }
+    @media (max-width: 992px) { 
+        .dashboard-main-grid, .dashboard-grid-2 { grid-template-columns: 1fr; } 
+        .dashboard-card { grid-column: auto !important; } 
+    }
 </style>
 
 <!-- Re-use footer for modals -->

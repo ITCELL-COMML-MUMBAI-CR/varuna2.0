@@ -174,30 +174,47 @@ body {
 /* 5. Custom Form Components & Animations
 /* ------------------------------ */
 
-/* Custom Animated Input Box */
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.form-section {
+    background: #fff;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin-bottom: 30px;
+}
+
+.form-section-title {
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: var(--text-color);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--primary-color);
+}
+
 .input-group {
-    /* This is now just a simple container for a label and its input */
-    margin-bottom: 15px;
-    /* Adds space between form rows */
+    margin-bottom: 20px;
 }
 
 .input-group label {
-    /* --- Label-on-Top Style --- */
     display: block;
-    /* Makes the label take its own line */
     font-weight: 500;
     color: #555;
     margin-bottom: 8px;
-    /* Space between label and input */
-    font-size: 0.9rem;
+    font-size: 0.95rem;
 }
 
-/* General styling for all text inputs */
 .input-group input[type="text"],
 .input-group input[type="number"],
 .input-group input[type="password"],
-.input-group input[type="file"] {
-    display: block;
+.input-group input[type="date"],
+.input-group select {
     width: 100%;
     padding: 12px 15px;
     font-size: 1rem;
@@ -206,9 +223,74 @@ body {
     background-color: #fdfdfd;
     border: 1px solid #ddd;
     border-radius: 6px;
-    box-sizing: border-box;
-    /* Important for padding and width */
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    transition: all 0.3s ease;
+}
+
+.input-group input[type="file"] {
+    width: 100%;
+    padding: 10px;
+    background-color: #fdfdfd;
+    border: 1px dashed #ddd;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.input-group input[type="file"]:hover {
+    border-color: var(--primary-color);
+    background-color: #fff;
+}
+
+.document-upload-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    margin-top: 20px;
+}
+
+.document-upload-item {
+    background: #f9f9f9;
+    padding: 20px;
+    border-radius: 6px;
+    border: 1px solid #eee;
+}
+
+.document-upload-item label {
+    color: #444;
+    font-weight: 500;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.form-actions {
+    text-align: center;
+    margin-top: 30px;
+    padding: 20px 0;
+}
+
+.form-actions button {
+    min-width: 200px;
+}
+
+@media (max-width: 768px) {
+    .details-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .document-upload-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-section {
+        padding: 20px 15px;
+    }
+}
+
+/* Custom Animated Input Box */
+.input-group {
+    /* This is now just a simple container for a label and its input */
+    margin-bottom: 15px;
+    /* Adds space between form rows */
 }
 
 .input-group input:focus {
@@ -364,13 +446,6 @@ body {
     transform: translateY(-1px);
     /* A subtle press down effect */
     box-shadow: 0 2px 5px rgba(244, 91, 105, 0.3);
-}
-
-.details-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 20px 25px;
-    /* 20px vertical gap, 25px horizontal gap */
 }
 
 /* A utility class to make an element span the full width of the grid */
@@ -897,7 +972,7 @@ body {
 
 .accordion-content {
     max-height: 0;
-    overflow: hidden;
+    overflow: auto;
     transition: max-height 0.4s ease-out;
 }
 
@@ -1362,4 +1437,210 @@ body {
     .dashboard-card {
         grid-column: auto !important;
     }
+}
+
+/* Dashboard Table Styles */
+.table-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.table-link:hover {
+    color: red;
+    text-decoration: underline;
+}
+
+.modal-table-container {
+    margin: 20px 0;
+    max-height: 60vh;
+    overflow: auto;
+}
+
+/* DataTables Custom Styling */
+.dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background: var(--primary-color) !important;
+    color: white !important;
+    border: 1px solid var(--primary-color) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: var(--secondary-color) !important;
+    color: white !important;
+    border: 1px solid var(--secondary-color) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    border-radius: 4px;
+}
+
+/* Dashboard Section Styles */
+.dashboard-section table.dataTable {
+    border-collapse: collapse;
+    border-spacing: 0;
+    width: 100%;
+}
+
+.dashboard-section table.dataTable thead th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    padding: 12px;
+    border-bottom: 2px solid #dee2e6;
+    text-align: center !important;
+}
+
+.dashboard-section table.dataTable tbody td {
+    padding: 12px;
+    border-bottom: 1px solid #dee2e6;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.dashboard-section table.dataTable tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Responsive Table Scrolling */
+.dashboard-card .dataTables_wrapper {
+    overflow-x: auto;
+    margin: 0 -10px;
+    padding: 0 10px;
+}
+
+/* Status Colors */
+.status-approved { color: #28a745; font-weight: 500; }
+.status-pending { color: #ffc107; font-weight: 500; }
+.status-rejected { color: #dc3545; font-weight: 500; }
+.status-terminated { color: #6c757d; font-weight: 500; }
+.status-active { color: #28a745; font-weight: 500; }
+.status-inactive { color: #dc3545; font-weight: 500; }
+
+/* Modal Styles */
+.modal-table-container table.dataTable thead th {
+    text-align: center !important;
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.modal-table-container table.dataTable tbody td {
+    text-align: center;
+}
+
+/* Status Count Styles */
+.status-counts {
+    display: flex;
+    gap: 20px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.status-count {
+    font-weight: 500;
+    padding: 5px 10px;
+    border-radius: 4px;
+    background-color: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.status-count span {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* Staff ID Link Styles */
+.staff-id-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.staff-id-link:hover {
+    color: red;
+    text-decoration: underline;
+}
+
+/* Staff Details Page Styles */
+.staff-details-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.details-section {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.details-section h2 {
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.detail-item label {
+    font-weight: 500;
+    color: #666;
+}
+
+.detail-item span {
+    font-size: 1.1em;
+}
+
+.documents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.document-item {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.document-item h3 {
+    margin-bottom: 10px;
+    color: var(--primary-color);
+}
+
+.document-item img {
+    max-width: 200px;
+    height: auto;
+    border-radius: 4px;
+    margin: 10px 0;
+}
+
+.document-link {
+    display: inline-block;
+    padding: 8px 16px;
+    background: var(--primary-color);
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    margin: 10px 0;
+    transition: background-color 0.2s;
+}
+
+.document-link:hover {
+    background: var(--secondary-color);
 }

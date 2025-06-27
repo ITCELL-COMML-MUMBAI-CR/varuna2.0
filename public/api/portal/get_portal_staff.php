@@ -29,7 +29,24 @@ try {
     $stmt->execute([$contract_id, $licensee_id]);
     $staff_list = $stmt->fetchAll();
 
-    echo json_encode(['data' => $staff_list]);
+    // Get status counts
+    $statusCountStmt = $pdo->prepare(
+        "SELECT 
+            SUM(CASE WHEN s.status = 'pending' THEN 1 ELSE 0 END) as pending_count,
+            SUM(CASE WHEN s.status = 'approved' THEN 1 ELSE 0 END) as approved_count,
+            SUM(CASE WHEN s.status = 'terminated' THEN 1 ELSE 0 END) as terminated_count
+         FROM varuna_staff s
+         JOIN contracts c ON s.contract_id = c.id
+         WHERE s.contract_id = ? AND c.licensee_id = ?"
+    );
+    $statusCountStmt->execute([$contract_id, $licensee_id]);
+    $statusCounts = $statusCountStmt->fetch(PDO::FETCH_ASSOC);
+
+    echo json_encode([
+        'success' => true,
+        'data' => $staff_list,
+        'statusCounts' => $statusCounts
+    ]);
 
 } catch (Exception $e) {
     http_response_code($e->getCode() > 0 ? $e->getCode() : 500);

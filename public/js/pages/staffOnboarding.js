@@ -112,40 +112,62 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     ////console.log('Updating document fields based on:', docReqs);
 
-    // Using 'l' for label and 'n' for name to match the corrected code below
     const docMapping = {
-        'Police': { l: 'Police Verification', n: 'police' },
-        'Medical': { l: 'Medical Fitness', n: 'medical' },
-        'TA': { l: 'TA Document', n: 'ta' },
-        'PPO': { l: 'PPO Document', n: 'ppo' }
+        Police: { label: 'Police Verification', name: 'police' },
+        Medical: { label: 'Medical Fitness', name: 'medical' },
+        TA: { label: 'TA Document', name: 'ta' },
+        PPO: { label: 'PPO Document', name: 'ppo' }
     };
 
-    for (const docKey in docMapping) {
-        if (docReqs[docKey] === 'Y') {
-            const docInfo = docMapping[docKey];
-            const hasExpiryField = (docKey === 'Police' || docKey === 'Medical');
-            
-            // CORRECTED: Using docInfo.l and docInfo.n
-            const fieldsHTML = `
-                <div class="input-group">
-                    <label>${docInfo.l} Image (Required)</label>
-                    <input type="file" name="${docInfo.n}_image" required accept="image/*">
-                </div>
-                <div class="input-group">
-                    <label>${docInfo.l} Issue Date (Required)</label>
-                    <div class="date-input-wrapper">
-                        <input type="date" id="${docInfo.n}_issue_date" name="${docInfo.n}_issue_date" required>
-                    </div>
-                </div>
-                ${hasExpiryField ? `
-                <div class="input-group">
-                    <label>${docInfo.l} Expiry Date (Required)</label>
-                    <div class="date-input-wrapper">
-                        <input type="date" id="${docInfo.n}_expiry_date" name="${docInfo.n}_expiry_date" readonly>
-                    </div>
-                </div>` : '<div class="input-group"></div>'}
+    for (const [key, doc] of Object.entries(docMapping)) {
+        if (docReqs[key] === 'Y') {
+            const hasExpiry = (key === 'Police' || key === 'Medical' || key === 'TA');
+            const hasIssue = (key === 'Police' || key === 'Medical');
+
+            const docItem = document.createElement('div');
+            docItem.className = 'document-upload-item';
+
+            let html = `
+                <label>${doc.label} Image</label>
+                <input type="file" name="${doc.name}_image" accept="image/*" required>
             `;
-            staffDocsContainer.insertAdjacentHTML('beforeend', fieldsHTML);
+
+            if (hasIssue) {
+                html += `
+                    <div class="input-group">
+                        <label>${doc.label} Issue Date</label>
+                        <input type="date" name="${doc.name}_issue_date" required>
+                    </div>
+                `;
+            }
+
+            if (hasExpiry) {
+                html += `
+                    <div class="input-group">
+                        <label>${doc.label} Expiry Date</label>
+                        <input type="date" name="${doc.name}_expiry_date" ${hasIssue ? 'readonly' : 'required'}>
+                    </div>
+                `;
+            }
+
+            docItem.innerHTML = html;
+            staffDocsContainer.appendChild(docItem);
+
+            // Add event listeners for issue date if applicable
+            if (hasIssue) {
+                const issueDate = docItem.querySelector(`[name="${doc.name}_issue_date"]`);
+                const expiryDate = docItem.querySelector(`[name="${doc.name}_expiry_date"]`);
+                
+                issueDate.addEventListener('change', function() {
+                    if (this.value) {
+                        const date = new Date(this.value);
+                        date.setFullYear(date.getFullYear() + 1);
+                        expiryDate.value = date.toISOString().split('T')[0];
+                    } else {
+                        expiryDate.value = '';
+                    }
+                });
+            }
         }
     }
 }
@@ -165,15 +187,55 @@ document.addEventListener("DOMContentLoaded", function () {
                     // This function sends the currently selected contract ID with every request
                     "data": function(d) {
                         d.contract_id = $('#contract_selector').val();
+                    },
+                    "dataSrc": function(json) {
+                        // Update status counts
+                        if (json.statusCounts) {
+                            $('#pending_count').text(json.statusCounts.pending_count);
+                            $('#approved_count').text(json.statusCounts.approved_count);
+                            $('#terminated_count').text(json.statusCounts.terminated_count);
+                        }
+                        return json.data;
                     }
                 },
                 "columns": [
-                    { "data": "id" }, { "data": "name" }, { "data": "designation" },
-                    { "data": "contact" }, { "data": "adhar_card_number" }, { "data": "status" }
-                ]
+                    { 
+                        "data": "id",
+                        /* "render": function(data, type, row) {
+                            if (type === 'display') {
+                                return `<a href="${BASE_URL}staff_details.php?id=${data}" target="_blank" class="staff-id-link">${data}</a>`;
+                            }
+                            return data;
+                        } */
+                    },
+                    { "data": "name" },
+                    { "data": "designation" },
+                    { "data": "contact" },
+                    { "data": "adhar_card_number" },
+                    { "data": "status" }
+                ],
+                "drawCallback": function() {
+                    // Prevent default link behavior to keep modals open
+                    $('.staff-id-link').on('click', function(e) {
+                        e.stopPropagation();
+                    });
+                }
             });
         }
     }
+
+    // Add status count elements to the DOM
+    $(document).ready(function() {
+        // Add status count display above the table
+        const statusCountHtml = `
+            <div class="status-counts" style="margin-bottom: 15px;">
+                <span class="status-count">Pending: <span id="pending_count">0</span></span>
+                <span class="status-count">Approved: <span id="approved_count">0</span></span>
+                <span class="status-count">Terminated: <span id="terminated_count">0</span></span>
+            </div>
+        `;
+        staffTable.before(statusCountHtml);
+    });
 
     // --- Interactive Client-Side Validation on Form Submit ---
     addStaffForm.addEventListener("submit", function (event) {
@@ -273,102 +335,6 @@ document.addEventListener("DOMContentLoaded", function () {
           }
         }, 500);
       }
-    });
-
-    // --- Modal Logic ---
-    $('#staff_table tbody').on('click', '.staff-details-link', function(event) {
-        event.preventDefault();
-        const staffId = $(this).data('staff-id');
-        
-        modalBody.innerHTML = '<p>Loading staff details...</p>';
-        modal.classList.remove('hidden');
-
-        fetch(`${BASE_URL}api/get_staff_details.php?id=${staffId}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    const s = data.staff;
-                    
-                    // --- Build the new, detailed HTML structure for the modal ---
-                    let modalHTML = `<h2>${s.name} <small>(${s.id})</small></h2>`;
-
-                    // Top section: Profile and Signature images
-                    modalHTML += `<div class="modal-top-images">
-                        <div class="modal-doc-item">
-                            <label>Profile Image</label>
-                            <a href="${BASE_URL}uploads/staff/${s.profile_image}" target="_blank" title="Click to view full image">
-                                <img src="${BASE_URL}uploads/staff/${s.profile_image}" class="modal-profile-img" alt="Profile Image">
-                            </a>
-                        </div>
-                        <div class="modal-doc-item">
-                            <label>Signature</label>
-                            <a href="${BASE_URL}uploads/staff/${s.signature_image}" target="_blank" title="Click to view full image">
-                                <img src="${BASE_URL}uploads/staff/${s.signature_image}" class="modal-signature-img" alt="Signature">
-                            </a>
-                        </div>
-                    </div>`;
-
-                    // Middle section: Textual details
-                    modalHTML += `<h4 class="modal-section-title">Staff Details</h4>`;
-                    modalHTML += `<div class="details-grid">
-                        <p><strong>Designation:</strong> ${s.designation || 'N/A'}</p>
-                        <p><strong>Contact:</strong> ${s.contact || 'N/A'}</p>
-                        <p><strong>Aadhar:</strong> ${s.adhar_card_number || 'N/A'}</p>
-                        <p><strong>Status:</strong> <span class="status-${s.status}">${s.status}</span></p>
-                    </div>`;
-                    
-                    // Bottom section: Other documents
-                    modalHTML += `<h4 class="modal-section-title">Submitted Documents</h4>`;
-                    modalHTML += `<div class="modal-docs-grid">`;
-                    
-                    if (s.police_image) modalHTML += `
-                        <div class="modal-doc-item">
-                            <label>Police Verification (Expires: ${s.police_expiry_date || 'N/A'})</label>
-                            <a href="${BASE_URL}uploads/staff/${s.police_image}" target="_blank" title="Click to view full image">
-                                <img src="${BASE_URL}uploads/staff/${s.police_image}" class="modal-doc-img" alt="Police Verification">
-                            </a>
-                        </div>`;
-                    
-                    if (s.medical_image) modalHTML += `
-                        <div class="modal-doc-item">
-                            <label>Medical Fitness (Expires: ${s.medical_expiry_date || 'N/A'})</label>
-                            <a href="${BASE_URL}uploads/staff/${s.medical_image}" target="_blank" title="Click to view full image">
-                                 <img src="${BASE_URL}uploads/staff/${s.medical_image}" class="modal-doc-img" alt="Medical Fitness">
-                            </a>
-                        </div>`;
-
-                    if (s.ta_image) modalHTML += `
-                        <div class="modal-doc-item">
-                            <label>TA Document</label>
-                            <a href="${BASE_URL}uploads/staff/${s.ta_image}" target="_blank" title="Click to view full image">
-                                <img src="${BASE_URL}uploads/staff/${s.ta_image}" class="modal-doc-img" alt="TA Document">
-                            </a>
-                        </div>`;
-
-                    if (s.ppo_image) modalHTML += `
-                        <div class="modal-doc-item">
-                            <label>PPO Document</label>
-                            <a href="${BASE_URL}uploads/staff/${s.ppo_image}" target="_blank" title="Click to view full image">
-                                <img src="${BASE_URL}uploads/staff/${s.ppo_image}" class="modal-doc-img" alt="PPO Document">
-                            </a>
-                        </div>`;
-
-                    modalHTML += `</div>`;
-                    
-                    // Note: No action buttons are added here, as this is for viewing only.
-                    
-                    modalBody.innerHTML = modalHTML;
-                } else {
-                    modalBody.innerHTML = `<p class="error-text">Could not load staff details.</p>`;
-                }
-            });
-    });
-
-    // Event listener to close the modal
-    modal.addEventListener('click', function(event){
-        if (event.target.matches('.modal-overlay') || event.target.matches('.modal-close-btn')){
-            modal.classList.add('hidden');
-        }
     });
   }
 });

@@ -2,11 +2,21 @@ document.addEventListener("DOMContentLoaded", function () {
   const tableEl = $("#viewer_staff_table");
   if (!tableEl.length) return;
 
+  // Add status count display above the table
+  const statusCountHtml = `
+    <div class="status-counts" style="margin-bottom: 15px;">
+        <span class="status-count">Pending: <span id="pending_count">0</span></span>
+        <span class="status-count">Approved: <span id="approved_count">0</span></span>
+        <span class="status-count">Terminated: <span id="terminated_count">0</span></span>
+    </div>
+  `;
+  tableEl.before(statusCountHtml);
+
   const viewerTable = tableEl.DataTable({
         "processing": true,
         "serverSide": true,
         "ajax": {
-            "url": `${BASE_URL}api/get_viewer_staff.php`, // Use the correct API
+            "url": `${BASE_URL}api/get_viewer_staff.php`,
             "type": "POST",
             "data": function(d) {
                 // Add filter data to the request
@@ -14,6 +24,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 d.filter_contract = $('#filter_contract').val();
                 d.filter_station = $('#filter_station').val();
                 d.filter_section = $('#filter_section').val();
+            },
+            "dataSrc": function(json) {
+                // Update status counts
+                if (json.statusCounts) {
+                    $('#pending_count').text(json.statusCounts.pending_count);
+                    $('#approved_count').text(json.statusCounts.approved_count);
+                    $('#terminated_count').text(json.statusCounts.terminated_count);
+                }
+                return json.data;
             }
         },
         "columns": [

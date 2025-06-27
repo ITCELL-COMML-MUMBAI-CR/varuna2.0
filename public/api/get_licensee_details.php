@@ -26,26 +26,27 @@ try {
     }
 
     // Get all contracts for this licensee
-    $contracts_stmt = $pdo->prepare("SELECT id, contract_name, status FROM contracts WHERE licensee_id = ? ORDER BY contract_name ASC");
-    $contracts_stmt->execute([$licensee_id]);
-    $contracts = $contracts_stmt->fetchAll();
-
-    $response_contracts = [];
-
-    // For each contract, get its staff
-    $staff_stmt = $pdo->prepare("SELECT id, name, status FROM varuna_staff WHERE contract_id = ? ORDER BY name ASC");
-    foreach ($contracts as $contract) {
-        $staff_stmt->execute([$contract['id']]);
-        $staff = $staff_stmt->fetchAll();
-        
-        $contract['staff'] = $staff;
-        $response_contracts[] = $contract;
-    }
+    $staff_stmt = $pdo->prepare("
+        SELECT c.id as contract_id, 
+               c.contract_name,
+               c.contract_type,
+               c.station_code,
+               COUNT(vs.id) as staff_count,
+               SUM(CASE WHEN vs.status = 'pending' THEN 1 ELSE 0 END) as pending_staff,
+               SUM(CASE WHEN vs.status = 'approved' THEN 1 ELSE 0 END) as approved_staff,
+               SUM(CASE WHEN vs.status = 'terminated' THEN 1 ELSE 0 END) as terminated_staff
+        FROM contracts c
+        LEFT JOIN varuna_staff vs ON c.id = vs.contract_id
+        WHERE c.licensee_id = ?
+        GROUP BY c.id, c.contract_name, c.contract_type, c.station_code
+        ORDER BY c.contract_name ASC
+    ");
+    $staff_stmt->execute([$licensee_id]);
+    $contracts = $staff_stmt->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode([
         'success' => true,
-        'licensee_name' => $licensee_name,
-        'contracts' => $response_contracts
+        'data' => $contracts
     ]);
 
 } catch (Exception $e) {

@@ -2,6 +2,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- 1. SETUP & INITIALIZATION ---
     let staffStatusChart;
     const licenseeTable = $('#licensee_breakdown_table');
+    const sectionTable = $('#section_breakdown_table');
+    const stationTable = $('#station_breakdown_table');
+    const contractTypeTable = $('#contract_type_breakdown_table');
     const licenseeCountEl = document.getElementById('licensee_count');
     const contractCountEl = document.getElementById('contract_count');
     const staffCountEl = document.getElementById('staff_count');
@@ -18,15 +21,182 @@ document.addEventListener('DOMContentLoaded', function() {
             staffCountEl.textContent = data.stats.staff;
             renderStaffStatusChart(data.staff_status_chart);
 
+            // Initialize Licensee Table
             licenseeTable.DataTable({
                 data: data.licensee_breakdown,
                 columns: [
-                    { "data": "licensee_name" },
+                    { 
+                        "data": "licensee_name",
+                        "render": function(data, type, row) {
+                            if (type === 'display') {
+                                return `<a href="#" class="table-link" data-type="licensee" data-id="${row.licensee_id}">${data}</a>`;
+                            }
+                            return data;
+                        }
+                    },
+                    { "data": "mobile_number" },
+                    { 
+                        "data": "status",
+                        "render": function(data) {
+                            return `<span class="status-${data.toLowerCase()}">${data}</span>`;
+                        }
+                    },
                     { "data": "contract_count" },
-                    { "data": "staff_count" }
+                    { "data": "staff_count" },
+                    { 
+                        "data": "pending_staff",
+                        "render": function(data) {
+                            return `<span class="status-pending">${data || 0}</span>`;
+                        }
+                    },
+                    { 
+                        "data": "approved_staff",
+                        "render": function(data) {
+                            return `<span class="status-approved">${data || 0}</span>`;
+                        }
+                    },
+                    { 
+                        "data": "terminated_staff",
+                        "render": function(data) {
+                            return `<span class="status-terminated">${data || 0}</span>`;
+                        }
+                    }
                 ],
                 "pageLength": 5,
-                "lengthChange": false
+                "lengthChange": false,
+                "order": [[0, "asc"]],
+                "columnDefs": [
+                    { "className": "dt-center", "targets": "_all" }
+                ]
+            });
+
+            // Initialize Section Table
+            sectionTable.DataTable({
+                data: data.section_breakdown,
+                columns: [
+                    { 
+                        "data": "section_code",
+                        "render": function(data, type, row) {
+                            if (type === 'display') {
+                                return `<a href="#" class="table-link" data-type="section" data-id="${data}">${data}</a>`;
+                            }
+                            return data;
+                        }
+                    },
+                    { "data": "licensee_count" },
+                    { "data": "contract_count" },
+                    { "data": "staff_count" },
+                    { 
+                        "data": "pending_staff",
+                        "render": function(data) {
+                            return `<span class="status-pending">${data || 0}</span>`;
+                        }
+                    },
+                    { 
+                        "data": "approved_staff",
+                        "render": function(data) {
+                            return `<span class="status-approved">${data || 0}</span>`;
+                        }
+                    },
+                    { 
+                        "data": "terminated_staff",
+                        "render": function(data) {
+                            return `<span class="status-terminated">${data || 0}</span>`;
+                        }
+                    }
+                ],
+                "pageLength": 5,
+                "lengthChange": false,
+                "order": [[3, "desc"]],
+                "columnDefs": [
+                    { "className": "dt-center", "targets": "_all" }
+                ]
+            });
+
+            // Initialize Station Table
+            stationTable.DataTable({
+                data: data.station_breakdown,
+                columns: [
+                    { 
+                        "data": "station_code",
+                        "render": function(data, type, row) {
+                            if (type === 'display') {
+                                return `<a href="#" class="table-link" data-type="station" data-id="${data}">${data}</a>`;
+                            }
+                            return data;
+                        }
+                    },
+                    { "data": "licensee_count" },
+                    { "data": "contract_count" },
+                    { "data": "staff_count" },
+                    { 
+                        "data": "pending_staff",
+                        "render": function(data) {
+                            return `<span class="status-pending">${data || 0}</span>`;
+                        }
+                    },
+                    { 
+                        "data": "approved_staff",
+                        "render": function(data) {
+                            return `<span class="status-approved">${data || 0}</span>`;
+                        }
+                    },
+                    { 
+                        "data": "terminated_staff",
+                        "render": function(data) {
+                            return `<span class="status-terminated">${data || 0}</span>`;
+                        }
+                    }
+                ],
+                "pageLength": 5,
+                "lengthChange": false,
+                "order": [[3, "desc"]],
+                "columnDefs": [
+                    { "className": "dt-center", "targets": "_all" }
+                ]
+            });
+
+            // Initialize Contract Type Table
+            contractTypeTable.DataTable({
+                data: data.contract_type_breakdown,
+                columns: [
+                    { 
+                        "data": "contract_type",
+                        "render": function(data, type, row) {
+                            if (type === 'display') {
+                                return `<a href="#" class="table-link" data-type="contract_type" data-id="${data}">${data}</a>`;
+                            }
+                            return data;
+                        }
+                    },
+                    { "data": "licensee_count" },
+                    { "data": "contract_count" },
+                    { "data": "staff_count" },
+                    { 
+                        "data": "pending_staff",
+                        "render": function(data) {
+                            return `<span class="status-pending">${data || 0}</span>`;
+                        }
+                    },
+                    { 
+                        "data": "approved_staff",
+                        "render": function(data) {
+                            return `<span class="status-approved">${data || 0}</span>`;
+                        }
+                    },
+                    { 
+                        "data": "terminated_staff",
+                        "render": function(data) {
+                            return `<span class="status-terminated">${data || 0}</span>`;
+                        }
+                    }
+                ],
+                "pageLength": 5,
+                "lengthChange": false,
+                "order": [[3, "desc"]],
+                "columnDefs": [
+                    { "className": "dt-center", "targets": "_all" }
+                ]
             });
         })
         .catch(error => {
@@ -44,7 +214,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 datasets: [{
                     label: 'Staff Status',
                     data: chartData.data,
-                    backgroundColor: ['#28a745', '#ffc107', '#dc3545', '#6c757d'],
+                    backgroundColor: ['#ffc107', '#28a745',  '#dc3545', '#6c757d'],
                     borderColor: '#fff',
                     borderWidth: 2
                 }]
@@ -54,17 +224,260 @@ document.addEventListener('DOMContentLoaded', function() {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { position: 'top' },
-                },
-                // --- FIX: onClick event has been removed from the chart options ---
+                }
             }
         });
     }
 
-    // --- 4. MODAL & CLICK EVENT HANDLING ---
+    // --- 4. CLICK EVENT HANDLERS ---
+
+    // Generic function to show detailed data modal
+    function showDetailsModal(title, url, columns, extraData = null) {
+        Swal.fire({
+            title: title,
+            html: '<div class="modal-table-container"><table id="details_table" class="display" style="width:100%"></table></div>',
+            width: '90%',
+            showCloseButton: true,
+            showConfirmButton: false,
+            didOpen: () => {
+                // Initialize DataTable with error handling
+                try {
+                    const table = $('#details_table').DataTable({
+                        ajax: {
+                            url: url,
+                            data: extraData,
+                            /* dataSrc: function(json) {
+                                // Ensure we have valid data
+                                if (!json.success || !json.data) {
+                                    console.error('Invalid data structure received:', json);
+                                    return [];
+                                }
+                                return json.data;
+                            } */
+                        },
+                        columns: columns,
+                        pageLength: 10,
+                        scrollX: true,
+                        columnDefs: [
+                            { "className": "dt-center", "targets": "_all" }
+                        ],
+                        language: {
+                            emptyTable: "No data available",
+                            zeroRecords: "No matching records found"
+                        }
+                    });
+
+                    // Add error handler for failed Ajax requests
+                    table.on('error.dt', function(e, settings, techNote, message) {
+                        console.error('DataTables error:', message);
+                        Swal.fire('Error', 'Failed to load data. Please try again.', 'error');
+                    });
+                } catch (error) {
+                    console.error('Error initializing DataTable:', error);
+                    Swal.fire('Error', 'Failed to initialize table. Please try again.', 'error');
+                }
+            }
+        });
+    }
+
+    // Handle clicks on table links
+    $(document).on('click', '.table-link', function(e) {
+        e.preventDefault();
+        const type = $(this).data('type');
+        const id = $(this).data('id');
+        
+        let title, url, columns, extraData = {};
+        
+        switch(type) {
+            case 'licensee':
+                title = 'Licensee Details';
+                url = `${BASE_URL}api/get_licensee_details.php?licensee_id=${id}`;
+                columns = [
+                    { 
+                        title: "Contract Name",
+                        data: "contract_name",
+                        render: function(data, type, row) {
+                            if (type === 'display') {
+                                return `<a href="#" class="table-link" data-type="contract" data-id="${row.contract_id}">${data}</a>`;
+                            }
+                            return data;
+                        }
+                    },
+                    { title: "Type", data: "contract_type" },
+                    { title: "Station", data: "station_code" },
+                    { title: "Total Staff", data: "staff_count" },
+                    { 
+                        title: "Pending Staff",
+                        data: "pending_staff",
+                        render: function(data) {
+                            return `<span class="status-pending">${data || 0}</span>`;
+                        }
+                    },
+                    { 
+                        title: "Approved Staff",
+                        data: "approved_staff",
+                        render: function(data) {
+                            return `<span class="status-approved">${data || 0}</span>`;
+                        }
+                    },
+                    { 
+                        title: "Terminated Staff",
+                        data: "terminated_staff",
+                        render: function(data) {
+                            return `<span class="status-terminated">${data || 0}</span>`;
+                        }
+                    }
+                ];
+                break;
+            case 'section':
+                title = `Section: ${id}`;
+                url = `${BASE_URL}api/get_contracts_list.php`;
+                columns = [
+                    { 
+                        title: "Contract Name",
+                        data: "contract_name",
+                        render: function(data, type, row) {
+                            if (type === 'display') {
+                                return `<a href="#" class="table-link" data-type="contract" data-id="${row.id}">${data}</a>`;
+                            }
+                            return data;
+                        }
+                    },
+                    { title: "Type", data: "contract_type" },
+                    { title: "Licensee", data: "licensee_name" },
+                    { title: "Station", data: "station_code" },
+                    { title: "Total Staff", data: "staff_count" },
+                    { 
+                        title: "Pending Staff",
+                        data: "pending_staff",
+                        render: function(data) {
+                            return `<span class="status-pending">${data || 0}</span>`;
+                        }
+                    },
+                    { 
+                        title: "Approved Staff",
+                        data: "approved_staff",
+                        render: function(data) {
+                            return `<span class="status-approved">${data || 0}</span>`;
+                        }
+                    },
+                    { 
+                        title: "Terminated Staff",
+                        data: "terminated_staff",
+                        render: function(data) {
+                            return `<span class="status-terminated">${data || 0}</span>`;
+                        }
+                    }
+                ];
+                extraData = { section: id };
+                break;
+            case 'station':
+                title = `Station: ${id}`;
+                url = `${BASE_URL}api/get_contracts_list.php`;
+                columns = [
+                    { 
+                        title: "Contract Name",
+                        data: "contract_name",
+                        render: function(data, type, row) {
+                            if (type === 'display') {
+                                return `<a href="#" class="table-link" data-type="contract" data-id="${row.id}">${data}</a>`;
+                            }
+                            return data;
+                        }
+                    },
+                    { title: "Type", data: "contract_type" },
+                    { title: "Licensee", data: "licensee_name" },
+                    { title: "Section", data: "section_code" },
+                    { title: "Total Staff", data: "staff_count" },
+                    { 
+                        title: "Pending Staff",
+                        data: "pending_staff",
+                        render: function(data) {
+                            return `<span class="status-pending">${data || 0}</span>`;
+                        }
+                    },
+                    { 
+                        title: "Approved Staff",
+                        data: "approved_staff",
+                        render: function(data) {
+                            return `<span class="status-approved">${data || 0}</span>`;
+                        }
+                    },
+                    { 
+                        title: "Terminated Staff",
+                        data: "terminated_staff",
+                        render: function(data) {
+                            return `<span class="status-terminated">${data || 0}</span>`;
+                        }
+                    }
+                ];
+                extraData = { station: id };
+                break;
+            case 'contract_type':
+                title = `Contract Type: ${id}`;
+                url = `${BASE_URL}api/get_contracts_list.php`;
+                columns = [
+                    { 
+                        title: "Contract Name",
+                        data: "contract_name",
+                        render: function(data, type, row) {
+                            if (type === 'display') {
+                                return `<a href="#" class="table-link" data-type="contract" data-id="${row.id}">${data}</a>`;
+                            }
+                            return data;
+                        }
+                    },
+                    { title: "Licensee", data: "licensee_name" },
+                    { title: "Station", data: "station_code" },
+                    { title: "Section", data: "section_code" },
+                    { title: "Total Staff", data: "staff_count" },
+                    { 
+                        title: "Pending Staff",
+                        data: "pending_staff",
+                        render: function(data) {
+                            return `<span class="status-pending">${data || 0}</span>`;
+                        }
+                    },
+                    { 
+                        title: "Approved Staff",
+                        data: "approved_staff",
+                        render: function(data) {
+                            return `<span class="status-approved">${data || 0}</span>`;
+                        }
+                    },
+                    { 
+                        title: "Terminated Staff",
+                        data: "terminated_staff",
+                        render: function(data) {
+                            return `<span class="status-terminated">${data || 0}</span>`;
+                        }
+                    }
+                ];
+                extraData = { contract_type: id };
+                break;
+            case 'contract':
+                title = 'Contract Staff Details';
+                url = `${BASE_URL}api/get_staff_list.php`;
+                columns = [
+                    { title: "Staff ID", data: "id" },
+                    { title: "Name", data: "name" },
+                    { title: "Designation", data: "designation" },
+                    { title: "Contact", data: "contact" },
+                    { 
+                        title: "Status",
+                        data: "status"
+                    }
+                ];
+                extraData = { contract_id: id };
+                break;
+        }
+        
+        showDetailsModal(title, url, columns, extraData);
+    });
 
     // --- FIX: Add click listeners to the main stat cards ---
     document.getElementById('licensees_card').addEventListener('click', () => {
-        showDetailsModal('All Licensees', 'licensee-modal-table', `${BASE_URL}api/get_licensees_list.php`, [
+        showDetailsModal('All Licensees', `${BASE_URL}api/get_licensees_list.php`, [
             { "data": "id", "title": "ID" },
             { "data": "name", "title": "Name" },
             { "data": "mobile_number", "title": "Mobile" },
@@ -73,7 +486,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     document.getElementById('contracts_card').addEventListener('click', () => {
-        showDetailsModal('All Contracts', 'contract-modal-table', `${BASE_URL}api/get_contracts_list.php`, [
+        showDetailsModal('All Contracts', `${BASE_URL}api/get_contracts_list.php`, [
             { "data": "id", "title": "ID" },
             { "data": "contract_name", "title": "Contract Name" },
             { "data": "contract_type", "title": "Type" },
@@ -84,93 +497,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     document.getElementById('staff_card').addEventListener('click', () => {
-        // We use the existing get_approved_staff API as it's suitable for a quick overview
-        showDetailsModal('All Approved Staff', 'staff-modal-table', `${BASE_URL}api/get_approved_staff.php`, [
+        showDetailsModal('All Approved Staff', `${BASE_URL}api/get_approved_staff.php`, [
             { "data": "id", "title": "ID" },
             { "data": "name", "title": "Name" },
             { "data": "designation", "title": "Designation" },
             { "data": "contract_name", "title": "Contract" },
             { "data": "station_code", "title": "Station" }
         ]);
-    });
-    
-    // Generic function to create and show a modal with a DataTable
-    function showDetailsModal(title, tableId, apiUrl, columns) {
-        Swal.fire({
-            title: title,
-            html: `<table id="${tableId}" class="display" style="width:100%"></table>`,
-            width: '90%',
-            showCloseButton: true,
-            showConfirmButton: false,
-            didOpen: () => {
-                // Initialize DataTable inside the modal
-                $(`#${tableId}`).DataTable({
-                    "processing": true,
-                    "ajax": { "url": apiUrl, "dataSrc": "data" },
-                    "columns": columns,
-                    "pageLength": 5,
-                    "lengthMenu": [5, 10, 25]
-                });
-            }
-        });
-    }
-
-    
-
-    licenseeTable.on('click', 'tbody tr', function() {
-        const rowData = licenseeTable.DataTable().row(this).data();
-        if (!rowData) return;
-
-        // Show a loading state while fetching data
-        Swal.fire({
-            title: `Loading Details for ${rowData.licensee_name}...`,
-            allowOutsideClick: false,
-            showConfirmButton: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
-
-        fetch(`${BASE_URL}api/get_licensee_details.php?licensee_id=${rowData.licensee_id}`)
-            .then(res => res.json())
-            .then(response => {
-                if (!response.success) {
-                    throw new Error(response.message || 'Could not fetch details.');
-                }
-
-                // Build the detailed HTML content for the modal
-                let modalContent = '<div class="licensee-details-modal">';
-                if (response.contracts && response.contracts.length > 0) {
-                    response.contracts.forEach(contract => {
-                        modalContent += `
-                            <div class="contract-group">
-                                <h4>${contract.contract_name} (Status: ${contract.status})</h4>
-                                <ul class="staff-list">`;
-                        if (contract.staff && contract.staff.length > 0) {
-                            contract.staff.forEach(staff => {
-                                modalContent += `<li>${staff.name} (ID: ${staff.id}) - <span class="status-${staff.status}">${staff.status}</span></li>`;
-                            });
-                        } else {
-                            modalContent += '<li>No staff found for this contract.</li>';
-                        }
-                        modalContent += '</ul></div>';
-                    });
-                } else {
-                    modalContent += '<p>No contracts found for this licensee.</p>';
-                }
-                modalContent += '</div>';
-
-                // Display the final modal
-                Swal.fire({
-                    title: `Details for ${response.licensee_name}`,
-                    html: modalContent,
-                    width: '800px',
-                    showCloseButton: true,
-                    showConfirmButton: false
-                });
-            })
-            .catch(error => {
-                Swal.fire('Error!', error.message, 'error');
-            });
     });
 });
