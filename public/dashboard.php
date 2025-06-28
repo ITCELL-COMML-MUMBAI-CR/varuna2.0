@@ -130,6 +130,34 @@ if (($_SESSION['designation'] ?? '') === 'ASC') {
             </table>
         </div>
     </div>
+
+    <!-- Expiring Documents Table -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Staff Documents Expiring in Next 30 Days</h5>
+                </div>
+                <div class="card-body">
+                    <table id="expiring_docs_table" class="display" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Staff Name</th>
+                                <th>Designation</th>
+                                <th>Licensee</th>
+                                <th>Licensee Mobile</th>
+                                <th>Contract</th>
+                                <th>Contract Type</th>
+                                <th>Station</th>
+                                <th>Document</th>
+                                <th>Expiry Date</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </main>
 
 <!-- Add custom styles for the dashboard -->

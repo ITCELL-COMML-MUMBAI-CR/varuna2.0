@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const sectionTable = $('#section_breakdown_table');
     const stationTable = $('#station_breakdown_table');
     const contractTypeTable = $('#contract_type_breakdown_table');
+    const expiringDocsTable = $('#expiring_docs_table');
     const licenseeCountEl = document.getElementById('licensee_count');
     const contractCountEl = document.getElementById('contract_count');
     const staffCountEl = document.getElementById('staff_count');
@@ -20,6 +21,49 @@ document.addEventListener('DOMContentLoaded', function() {
             contractCountEl.textContent = data.stats.contracts;
             staffCountEl.textContent = data.stats.staff;
             renderStaffStatusChart(data.staff_status_chart);
+
+            // Initialize Expiring Documents Table
+            expiringDocsTable.DataTable({
+                data: data.expiring_documents,
+                columns: [
+                    { 
+                        "data": "staff_name",
+                        "render": function(data, type, row) {
+                            if (type === 'display') {
+                                return `<a href="#" class="table-link" data-type="staff" data-id="${row.staff_id}">${data}</a>`;
+                            }
+                            return data;
+                        }
+                    },
+                    { "data": "designation" },
+                    { "data": "licensee_name" },
+                    { "data": "licensee_mobile" },
+                    { "data": "contract_name" },
+                    { "data": "contract_type" },
+                    { "data": "station_code" },
+                    { 
+                        "data": "expiring_document",
+                        "render": function(data) {
+                            return `<span class="badge bg-warning text-dark">${data}</span>`;
+                        }
+                    },
+                    { 
+                        "data": "expiry_date",
+                        "render": function(data) {
+                            const date = new Date(data);
+                            const today = new Date();
+                            const daysUntilExpiry = Math.ceil((date - today) / (1000 * 60 * 60 * 24));
+                            const formattedDate = date.toLocaleDateString();
+                            return `<span class="badge bg-${daysUntilExpiry <= 7 ? 'danger' : 'warning'}">${formattedDate} (${daysUntilExpiry} days)</span>`;
+                        }
+                    }
+                ],
+                "pageLength": 10,
+                "order": [[8, "asc"]],
+                "columnDefs": [
+                    { "className": "dt-center", "targets": "_all" }
+                ]
+            });
 
             // Initialize Licensee Table
             licenseeTable.DataTable({
@@ -231,9 +275,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- 4. CLICK EVENT HANDLERS ---
 
+    // Keep track of modal history
+    const modalStack = [];
+
     // Generic function to show detailed data modal
     function showDetailsModal(title, url, columns, extraData = null) {
-        Swal.fire({
+        const modalConfig = {
             title: title,
             html: '<div class="modal-table-container"><table id="details_table" class="display" style="width:100%"></table></div>',
             width: '90%',
@@ -245,15 +292,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const table = $('#details_table').DataTable({
                         ajax: {
                             url: url,
-                            data: extraData,
-                            /* dataSrc: function(json) {
-                                // Ensure we have valid data
-                                if (!json.success || !json.data) {
-                                    console.error('Invalid data structure received:', json);
-                                    return [];
-                                }
-                                return json.data;
-                            } */
+                            data: extraData
                         },
                         columns: columns,
                         pageLength: 10,
@@ -276,8 +315,24 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.error('Error initializing DataTable:', error);
                     Swal.fire('Error', 'Failed to initialize table. Please try again.', 'error');
                 }
+            },
+            willClose: () => {
+                // Remove this modal from the stack when it's closed
+                modalStack.pop();
+                
+                // If there are previous modals in the stack, show the last one
+                if (modalStack.length > 0) {
+                    const prevModal = modalStack[modalStack.length - 1];
+                    Swal.fire(prevModal);
+                }
             }
-        });
+        };
+
+        // Add current modal to the stack
+        modalStack.push(modalConfig);
+
+        // Show the modal
+        Swal.fire(modalConfig);
     }
 
     // Handle clicks on table links
@@ -469,6 +524,89 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 ];
                 extraData = { contract_id: id };
+                break;
+            case 'staff':
+                title = 'Staff Details';
+                url = `${BASE_URL}api/get_staff_details.php`;
+                columns = [
+                    { title: "Name", data: "name" },
+                    { title: "Designation", data: "designation" },
+                    { title: "Contact", data: "contact" },
+                    { title: "Contract", data: "contract_name" },
+                    { title: "Contract Type", data: "contract_type" },
+                    { title: "Station", data: "station_code" },
+                    { title: "Licensee", data: "licensee_name" },
+                    { title: "Licensee Mobile", data: "licensee_mobile" },
+                    { 
+                        title: "Police Verification",
+                        data: null,
+                        render: function(data) {
+                            const issueDate = data.police_issue_date;
+                            const expiryDate = data.police_expiry_date;
+                            if (!expiryDate) return '<span class="badge bg-secondary">Not Available</span>';
+                            
+                            const date = new Date(expiryDate);
+                            const today = new Date();
+                            const daysUntilExpiry = Math.ceil((date - today) / (1000 * 60 * 60 * 24));
+                            const formattedExpiry = new Date(expiryDate).toLocaleDateString();
+                            const formattedIssue = issueDate ? new Date(issueDate).toLocaleDateString() : 'N/A';
+                            
+                            let badge = '';
+                            if (daysUntilExpiry < 0) {
+                                badge = `<span class="badge bg-danger">Expired on ${formattedExpiry}</span>`;
+                            } else {
+                                badge = `<span class="badge bg-${daysUntilExpiry <= 30 ? 'warning' : 'success'}">${formattedExpiry}</span>`;
+                            }
+                            return `${badge}<br><small>Issued: ${formattedIssue}</small>`;
+                        }
+                    },
+                    { 
+                        title: "Medical Certificate",
+                        data: null,
+                        render: function(data) {
+                            const issueDate = data.medical_issue_date;
+                            const expiryDate = data.medical_expiry_date;
+                            if (!expiryDate) return '<span class="badge bg-secondary">Not Available</span>';
+                            
+                            const date = new Date(expiryDate);
+                            const today = new Date();
+                            const daysUntilExpiry = Math.ceil((date - today) / (1000 * 60 * 60 * 24));
+                            const formattedExpiry = new Date(expiryDate).toLocaleDateString();
+                            const formattedIssue = issueDate ? new Date(issueDate).toLocaleDateString() : 'N/A';
+                            
+                            let badge = '';
+                            if (daysUntilExpiry < 0) {
+                                badge = `<span class="badge bg-danger">Expired on ${formattedExpiry}</span>`;
+                            } else {
+                                badge = `<span class="badge bg-${daysUntilExpiry <= 30 ? 'warning' : 'success'}">${formattedExpiry}</span>`;
+                            }
+                            return `${badge}<br><small>Issued: ${formattedIssue}</small>`;
+                        }
+                    },
+                    { 
+                        title: "TA Document",
+                        data: "ta_expiry_date",
+                        render: function(data) {
+                            if (!data) return '<span class="badge bg-secondary">Not Available</span>';
+                            const date = new Date(data);
+                            const today = new Date();
+                            const daysUntilExpiry = Math.ceil((date - today) / (1000 * 60 * 60 * 24));
+                            const formattedDate = new Date(data).toLocaleDateString();
+                            if (daysUntilExpiry < 0) {
+                                return `<span class="badge bg-danger">Expired on ${formattedDate}</span>`;
+                            }
+                            return `<span class="badge bg-${daysUntilExpiry <= 30 ? 'warning' : 'success'}">${formattedDate}</span>`;
+                        }
+                    },
+                    { 
+                        title: "Status",
+                        data: "status",
+                        render: function(data) {
+                            return `<span class="status-${data.toLowerCase()}">${data}</span>`;
+                        }
+                    }
+                ];
+                extraData = { staff_id: id };
                 break;
         }
         

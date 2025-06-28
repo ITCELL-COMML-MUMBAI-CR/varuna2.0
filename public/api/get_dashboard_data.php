@@ -137,6 +137,42 @@ try {
     $stmt->execute($params);
     $contract_type_breakdown = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // 7. Near Expiry Documents
+    $expiring_docs_sql = "
+        SELECT 
+            s.id as staff_id,
+            s.name as staff_name,
+            s.designation,
+            l.name as licensee_name,
+            l.mobile_number as licensee_mobile,
+            c.contract_name,
+            c.contract_type,
+            c.station_code,
+            CASE 
+                WHEN s.police_expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 'Police Verification'
+                WHEN s.medical_expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 'Medical Certificate'
+                WHEN s.ta_expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 'TA Document'
+            END as expiring_document,
+            CASE 
+                WHEN s.police_expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN s.police_expiry_date
+                WHEN s.medical_expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN s.medical_expiry_date
+                WHEN s.ta_expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN s.ta_expiry_date
+            END as expiry_date
+        FROM varuna_staff s
+        INNER JOIN contracts c ON s.contract_id = c.id
+        INNER JOIN varuna_licensee l ON c.licensee_id = l.id
+        WHERE s.status = 'approved'
+        AND (
+            s.police_expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+            OR s.medical_expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+            OR s.ta_expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+        )
+        {$staff_where_clause}
+        ORDER BY expiry_date ASC";
+    $stmt = $pdo->prepare($expiring_docs_sql);
+    $stmt->execute($params);
+    $expiring_documents = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
     // --- Assemble and Return the Final JSON Response ---
     echo json_encode([
         'success' => true,
@@ -153,6 +189,7 @@ try {
         'section_breakdown'       => $section_breakdown,
         'station_breakdown'       => $station_breakdown,
         'contract_type_breakdown' => $contract_type_breakdown,
+        'expiring_documents'      => $expiring_documents,
     ]);
 
 } catch (Exception $e) {
