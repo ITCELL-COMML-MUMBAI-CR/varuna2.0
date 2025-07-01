@@ -364,6 +364,19 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // --- 3. EVENT LISTENERS ---
+  staffTable.on('click', '.btn-action.view', function() {
+      const staffId = $(this).data('staff-id');
+      if (staffId) {
+          openViewStaffModal(staffId);
+      }
+  });
+
+  staffTable.on('click', '.btn-action.edit', function() {
+      const staffId = $(this).data('staff-id');
+      if (staffId) {
+          openEditStaffModal(staffId);
+      }
+  });
   document.addEventListener('change', function(event) {
     const targetId = event.target.id;
 
