@@ -1,4 +1,22 @@
 document.addEventListener('DOMContentLoaded', function() {
+    const lockedOverlay = document.querySelector('.feature-lock-overlay');
+    if (lockedOverlay) {
+        lockedOverlay.addEventListener('click', () => {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Feature Locked',
+                text: 'Please upload your signature from the Profile page to enable this feature.',
+                confirmButtonText: 'Go to Profile',
+                showCancelButton: true,
+                cancelButtonText: 'Close'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = `${BASE_URL}profile`;
+                }
+            });
+        });
+    }
+
     const pageContainer = document.querySelector('.tab-container');
     if (!pageContainer) return;
 

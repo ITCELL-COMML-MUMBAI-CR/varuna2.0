@@ -33,6 +33,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // 2. ADD THIS LINE: Store the user's section in the session
             $_SESSION['section'] = $user['section'];
 
+            // Fetch and store authority signature
+            $sig_stmt = $pdo->prepare("SELECT signature_path FROM varuna_authority_signatures WHERE user_id = ?");
+            $sig_stmt->execute([$user['id']]);
+            $signature_path = $sig_stmt->fetchColumn();
+            $_SESSION['signature_path'] = $signature_path ?: ''; // Store path or empty string
+
             $logData = ['user_id' => $user['id'], 'username' => $user['username']];
             log_activity($pdo, 'LOGIN_SUCCESS', $logData);
 

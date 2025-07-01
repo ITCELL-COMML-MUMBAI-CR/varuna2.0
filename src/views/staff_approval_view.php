@@ -7,7 +7,21 @@ if (!defined('VARUNA_ENTRY_POINT') || $_SESSION['role'] !== 'SCI') {
 <?php include __DIR__ . '/header.php'; ?>
 <?php include __DIR__ . '/navbar.php'; ?>
 
-<main class="page-container" style="padding: 20px 40px;">
+<main class="page-container" style="padding: 20px 40px; position: relative;">
+    <?php
+    $has_signature = isset($_SESSION['signature_path']) && !empty($_SESSION['signature_path']);
+    if (!$has_signature) {
+        echo '
+        <div class="feature-lock-overlay">
+            <div class="feature-lock-overlay-content">
+                <span class="lock-icon">🔒</span>
+                <p>Functionality Locked</p>
+                <span>Click for more info</span>
+            </div>
+        </div>';
+    }
+    ?>
+
     <h2>Staff Approval Management</h2>
 
     <div class="tab-container">
@@ -20,9 +34,9 @@ if (!defined('VARUNA_ENTRY_POINT') || $_SESSION['role'] !== 'SCI') {
         <h3>Pending Staff for Your Section</h3>
         
         <div style="margin-bottom: 15px; display: flex; gap: 10px;">
-            <button id="bulk_approve_btn" class="btn-action approve">✔ Approve Selected</button>
-            <button id="bulk_reject_btn" class="btn-action reject">✖ Reject Selected</button>
-            </div>
+            <button id="bulk_approve_btn" class="btn-action approve" <?php if (!$has_signature) echo 'disabled'; ?>>✔ Approve Selected</button>
+            <button id="bulk_reject_btn" class="btn-action reject" <?php if (!$has_signature) echo 'disabled'; ?>>✖ Reject Selected</button>
+        </div>
 
         <table id="pending_staff_table" class="display" style="width:100%">
             <thead>

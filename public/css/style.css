@@ -1644,3 +1644,53 @@ body {
 .document-link:hover {
     background: var(--secondary-color);
 }
+
+/* --- Feature Lock Overlay --- */
+.feature-locked-container {
+    position: relative;
+    border: 1px dashed #ddd;
+    padding: 15px;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
+
+.feature-lock-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(230, 230, 230, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+.feature-lock-overlay-content {
+    text-align: center;
+    color: #333;
+}
+
+.feature-lock-overlay-content .lock-icon {
+    font-size: 40px;
+    color: #dc3545;
+    margin-bottom: 10px;
+}
+
+.feature-lock-overlay-content p {
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 0;
+}
+
+/* Adjustments for buttons inside locked container */
+.feature-locked-container .btn-action {
+    opacity: 0.5;
+    pointer-events: none;
+}

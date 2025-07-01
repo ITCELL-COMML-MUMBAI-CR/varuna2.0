@@ -64,15 +64,30 @@ elseif ($user_role === 'SCI') {
 <?php include __DIR__ . '/header.php'; ?>
 <?php include __DIR__ . '/navbar.php'; ?>
 
-<main class="page-container" style="padding: 20px 40px;">
+<main class="page-container" style="padding: 20px 40px; position: relative;">
+    <?php
+    $has_signature = isset($_SESSION['signature_path']) && !empty($_SESSION['signature_path']);
+    if (!$has_signature) {
+        echo '
+        <div class="feature-lock-overlay">
+            <div class="feature-lock-overlay-content">
+                <span class="lock-icon">🔒</span>
+                <p>Functionality Locked</p>
+                <span>Click for more info</span>
+            </div>
+        </div>';
+    }
+    $disabled_attr = !$has_signature ? 'disabled' : '';
+    ?>
+
     <h2>Bulk ID Card Printing</h2>
     <p>Select a group of staff to generate a printable page with all their ID cards.</p>
 
     <div class="tab-container" style="margin-top: 20px;">
-        <button class="tab-link active" data-tab="tab_licensee">By Licensee</button>
-        <button class="tab-link" data-tab="tab_contract">By Contract</button>
-        <button class="tab-link" data-tab="tab_station">By Station</button>
-        <button class="tab-link" data-tab="tab_section">By Section</button>
+        <button class="tab-link active" data-tab="tab_licensee" <?php echo $disabled_attr; ?>>By Licensee</button>
+        <button class="tab-link" data-tab="tab_contract" <?php echo $disabled_attr; ?>>By Contract</button>
+        <button class="tab-link" data-tab="tab_station" <?php echo $disabled_attr; ?>>By Station</button>
+        <button class="tab-link" data-tab="tab_section" <?php echo $disabled_attr; ?>>By Section</button>
     </div>
 
     <form id="bulkPrintForm" action="<?php echo BASE_URL; ?>bulk_id_page.php" method="GET" target="_blank">
@@ -80,44 +95,44 @@ elseif ($user_role === 'SCI') {
         <div id="tab_licensee" class="tab-content active">
             <div class="input-group" style="max-width: 500px; margin-top: 15px;">
                 <label>Select Licensee</label>
-                <select name="licensee_id">
+                <select name="licensee_id" <?php echo $disabled_attr; ?>>
                     <option value="">-- Select --</option>
                     <?php foreach($licensees as $l): ?><option value="<?php echo $l['id']; ?>"><?php echo htmlspecialchars($l['name']); ?></option><?php endforeach; ?>
                 </select>
-                <button type="submit" data-filter="licensee" class="btn-login form-submit-btn" style="margin-top: 15px;">Generate Page</button>
+                <button type="submit" data-filter="licensee" class="btn-login form-submit-btn" style="margin-top: 15px;" <?php echo $disabled_attr; ?>>Generate Page</button>
             </div>
         </div>
 
         <div id="tab_contract" class="tab-content">
             <div class="input-group" style="max-width: 500px; margin-top: 15px;">
                 <label>Select Contract</label>
-                <select name="contract_id">
+                <select name="contract_id" <?php echo $disabled_attr; ?>>
                     <option value="">-- Select --</option>
                     <?php foreach($contracts as $c): ?><option value="<?php echo $c['id']; ?>"><?php echo htmlspecialchars($c['contract_name'] . ' (' . $c['station_code'] . ')'); ?></option><?php endforeach; ?>
                 </select>
-                <button type="submit" data-filter="contract" class="btn-login form-submit-btn" style="margin-top: 15px;">Generate Page</button>
+                <button type="submit" data-filter="contract" class="btn-login form-submit-btn" style="margin-top: 15px;" <?php echo $disabled_attr; ?>>Generate Page</button>
             </div>
         </div>
 
         <div id="tab_station" class="tab-content">
             <div class="input-group" style="max-width: 500px; margin-top: 15px;">
                 <label>Select Station</label>
-                <select name="station_code">
+                <select name="station_code" <?php echo $disabled_attr; ?>>
                      <option value="">-- Select --</option>
                     <?php foreach($stations as $s): ?><option value="<?php echo $s; ?>"><?php echo htmlspecialchars($s); ?></option><?php endforeach; ?>
                 </select>
-                <button type="submit" data-filter="station" class="btn-login form-submit-btn" style="margin-top: 15px;">Generate Page</button>
+                <button type="submit" data-filter="station" class="btn-login form-submit-btn" style="margin-top: 15px;" <?php echo $disabled_attr; ?>>Generate Page</button>
             </div>
         </div>
         
         <div id="tab_section" class="tab-content">
             <div class="input-group" style="max-width: 500px; margin-top: 15px;">
                 <label>Select Section</label>
-                <select name="section_code">
+                <select name="section_code" <?php echo $disabled_attr; ?>>
                     <option value="">-- Select --</option>
                     <?php foreach($sections as $s): ?><option value="<?php echo $s['Section_Code']; ?>"><?php echo htmlspecialchars($s['Name']); ?></option><?php endforeach; ?>
                 </select>
-                <button type="submit" data-filter="section" class="btn-login form-submit-btn" style="margin-top: 15px;">Generate Page</button>
+                <button type="submit" data-filter="section" class="btn-login form-submit-btn" style="margin-top: 15px;" <?php echo $disabled_attr; ?>>Generate Page</button>
             </div>
         </div>
         
