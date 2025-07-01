@@ -82,7 +82,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     { 
                         "data": "status",
                         "render": function(data) {
-                            return `<span class="status-${data.toLowerCase()}">${data}</span>`;
+                            if (data) {
+                                return `<span class="status-${data.toLowerCase()}">${data}</span>`;
+                            }
+                            return '';
                         }
                     },
                     { "data": "contract_count" },
