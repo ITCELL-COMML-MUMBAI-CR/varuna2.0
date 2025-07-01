@@ -43,7 +43,7 @@ if (empty($staff_ids)) {
             body { background-color: white; }
             .print-controls { display: none !important; }
             .card-grid { display: block; }
-            .page-break { page-break-after: always; }
+            .card-wrapper { page-break-after: always; }
         }
     </style>
 </head>
@@ -55,16 +55,10 @@ if (empty($staff_ids)) {
     </div>
     <div class="card-grid">
     <?php
-    $count = 0;
     foreach ($staff_ids as $staff_id_to_print) {
-        // Add a page break after every 8 cards (4 rows)
-        if ($count > 0 && $count % 8 == 0) {
-            echo "</div><div class='page-break'></div><div class='card-grid'>";
-        }
         echo "<div class='card-wrapper'>";
         renderIdCard($staff_id_to_print, $pdo);
         echo "</div>";
-        $count++;
     }
     ?>
     </div>
