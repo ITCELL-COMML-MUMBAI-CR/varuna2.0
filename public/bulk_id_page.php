@@ -1,15 +1,16 @@
 <?php
 require_once __DIR__ . '/../src/init.php';
 
-// This function is now declared OUTSIDE the loop to prevent redeclaration errors.
-function renderIdCard($staff_id_to_print, $pdo) {
-    // This variable will be used inside id_card.php to hide the single print button.
-    $is_bulk_print = true; 
+// This function now fetches data and includes the template, ensuring no data conflicts.
+function renderIdCard($staff_id, $pdo) {
+    $card_data = get_staff_card_data($pdo, $staff_id);
     
-    $_GET['staff_id'] = $staff_id_to_print;
-    
-    // The include will execute the id_card.php script within this function's scope
-    include 'id_card.php';
+    if ($card_data) {
+        // The template uses the $card_data variable to render the ID card.
+        include 'id_card_template.php';
+    } else {
+        echo "<div class='page-break' style='text-align:center; padding: 20px; color: red;'>Could not load data for Staff ID: " . htmlspecialchars($staff_id) . "</div>";
+    }
 }
 
 $filter_by = $_GET['filter_by'] ?? '';
@@ -35,12 +36,13 @@ if (empty($staff_ids)) {
         @media screen {
             body { display: flex; flex-direction: column; align-items: center; background-color: #ccc; }
             .print-controls { text-align: center; margin: 20px; padding: 15px; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            .card-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
-            .page-break { page-break-after: always; }
+            .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+            #printableArea { width: auto; height: auto; float: none; }
         }
         @media print {
             body { background-color: white; }
             .print-controls { display: none !important; }
+            .card-grid { display: block; }
             .page-break { page-break-after: always; }
         }
     </style>
@@ -53,11 +55,16 @@ if (empty($staff_ids)) {
     </div>
     <div class="card-grid">
     <?php
+    $count = 0;
     foreach ($staff_ids as $staff_id_to_print) {
-        // We wrap each call in a div for layout and print control
-        echo "<div class='page-break'>";
+        // Add a page break after every 8 cards (4 rows)
+        if ($count > 0 && $count % 8 == 0) {
+            echo "</div><div class='page-break'></div><div class='card-grid'>";
+        }
+        echo "<div class='card-wrapper'>";
         renderIdCard($staff_id_to_print, $pdo);
         echo "</div>";
+        $count++;
     }
     ?>
     </div>

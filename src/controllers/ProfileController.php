@@ -12,13 +12,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $user_id = $_SESSION['user_id'];
         $upload_dir = 'uploads/authority/';
         
-        // Use our global function to process the image
-        $new_filename = process_image_upload($_FILES['signature_file'], $upload_dir, "auth_sig_{$user_id}");
+        // Get file extension from uploaded file
+        $file_ext = pathinfo($_FILES['signature_file']['name'], PATHINFO_EXTENSION);
+        
+        // Use filename with proper extension
+        $signature_filename = "auth_sig_{$user_id}.{$file_ext}";
+        
+        // Process the uploaded image
+        $new_filename = process_image_upload($_FILES['signature_file'], $upload_dir, $signature_filename);
 
         if (is_array($new_filename)) {
             $_SESSION['error_message'] = implode(', ', $new_filename);
         } else {
-            // Use INSERT ... ON DUPLICATE KEY UPDATE to handle both new and existing users
+            // Store the complete filename with extension in the database
             $stmt = $pdo->prepare("
                 INSERT INTO varuna_authority_signatures (user_id, signature_path) 
                 VALUES (?, ?) 

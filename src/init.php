@@ -19,7 +19,8 @@ require_once dirname(__DIR__) . '/config.php'; // Gets DB credentials and BASE_U
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 require_once __DIR__ . '/core/session.php';
 require_once __DIR__ . '/core/functions.php';
-require_once __DIR__ . '/core/Database.php'; // <-- Include the new Database class
+require_once __DIR__ . '/core/database.php';
+require_once __DIR__ . '/core/qr_generator.php'; // QR Code functions
 
 
 // 3. START THE SESSION
@@ -34,3 +35,50 @@ $pdo = Database::getInstance()->getConnection();
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
+
+// Migrate any existing signatures in the database that don't have file extensions
+function migrateAuthoritySignatures() {
+    global $pdo;
+    
+    // Check if the migration has been run
+    $migrationKey = 'authority_signatures_migration_completed';
+    if (isset($_SESSION[$migrationKey])) {
+        return; // Already ran this session
+    }
+    
+    try {
+        $stmt = $pdo->query("SELECT user_id, signature_path FROM varuna_authority_signatures");
+        $signatures = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        foreach ($signatures as $signature) {
+            $path = $signature['signature_path'];
+            
+            // Skip if path already has extension
+            if (pathinfo($path, PATHINFO_EXTENSION)) {
+                continue;
+            }
+            
+            $basePath = __DIR__ . '/../public/uploads/authority/' . $path;
+            
+            // Check for files with various extensions
+            foreach (['.png', '.jpg', '.jpeg', '.gif'] as $ext) {
+                if (file_exists($basePath . $ext)) {
+                    // Found a file with extension, update the database
+                    $newPath = $path . $ext;
+                    $updateStmt = $pdo->prepare("UPDATE varuna_authority_signatures SET signature_path = ? WHERE user_id = ?");
+                    $updateStmt->execute([$newPath, $signature['user_id']]);
+                    error_log("Updated signature path for user {$signature['user_id']}: $path -> $newPath");
+                    break;
+                }
+            }
+        }
+        
+        // Mark migration as completed for this session
+        $_SESSION[$migrationKey] = true;
+    } catch (Exception $e) {
+        error_log("Error migrating authority signatures: " . $e->getMessage());
+    }
+}
+
+// Run the migration
+migrateAuthoritySignatures();

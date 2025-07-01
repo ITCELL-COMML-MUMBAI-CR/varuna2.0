@@ -143,6 +143,16 @@ body {
     color: #00BFFF;
     font-weight: bold;
     margin: 0;
+    max-width: 100%;
+    word-wrap: break-word;
+}
+
+/* Add responsive font sizing for vendor name */
+.vendor-name.long-name {
+    font-size: 0.95rem;
+}
+.vendor-name.very-long-name {
+    font-size: 0.8rem;
 }
 
 .station-name {

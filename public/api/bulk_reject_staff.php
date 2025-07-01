@@ -53,9 +53,11 @@ try {
     $pdo->commit();
     
     // 5. Logging and Success Response
-    log_activity($pdo, 'STAFF_BULK_REJECT', [
-        'details' => "Bulk rejected $affected_rows staff members with remark: '$remark'. IDs: " . implode(', ', $sanitized_ids)
-    ]);
+    foreach ($sanitized_ids as $staff_id) {
+        log_activity($pdo, 'STAFF_STATUS_UPDATE', [
+            'details' => "Staff ID $staff_id status updated to rejected with remark: '$remark' via bulk operation."
+        ]);
+    }
     
     $response = [
         'success' => true,

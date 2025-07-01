@@ -141,3 +141,67 @@ function getStaffIdsForBulkPrint($pdo, $filter_by, $filter_value) {
         return []; // Return empty on error
     }
 }
+
+/**
+ * Fetches all necessary data to render a staff ID card.
+ *
+ * @param PDO $pdo The database connection object.
+ * @param string $staff_id The ID of the staff member.
+ * @return array|null An associative array of card data or null if not found.
+ */
+function get_staff_card_data($pdo, $staff_id) {
+    if (empty($staff_id)) {
+        return null;
+    }
+
+    try {
+        $stmt = $pdo->prepare("
+            SELECT s.*, c.contract_name, c.contract_type, c.section_code, c.station_code, l.name as licensee_name
+            FROM varuna_staff s
+            LEFT JOIN contracts c ON s.contract_id = c.id
+            LEFT JOIN varuna_licensee l ON c.licensee_id = l.id
+            WHERE s.id = ? AND s.status = 'approved'
+        ");
+        $stmt->execute([$staff_id]);
+        $staff = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$staff) {
+            error_log("Staff not found or not approved for ID: $staff_id");
+            return null;
+        }
+        
+        $log_stmt = $pdo->prepare("
+            SELECT user_id FROM varuna_activity_log 
+            WHERE action = 'STAFF_STATUS_UPDATE' AND details LIKE ? ORDER BY timestamp DESC LIMIT 1
+        ");
+        $log_stmt->execute(["%Staff ID $staff_id status updated to approved%"]);
+        $approver_id = $log_stmt->fetchColumn();
+        
+        $auth_sig_path = '';
+        if ($approver_id) {
+            $sig_stmt = $pdo->prepare("SELECT signature_path FROM varuna_authority_signatures WHERE user_id = ?");
+            $sig_stmt->execute([$approver_id]);
+            $path_from_db = $sig_stmt->fetchColumn();
+            
+            if ($path_from_db && file_exists(PROJECT_ROOT . '/public/uploads/authority/' . $path_from_db)) {
+                $auth_sig_path = $path_from_db;
+            } else {
+                error_log("Signature file not found for approver ID: $approver_id, Path: $path_from_db");
+            }
+        }
+
+        $style_stmt = $pdo->prepare("SELECT * FROM varuna_id_styles WHERE contract_type = ?");
+        $style_stmt->execute([$staff['contract_type']]);
+        $styles = $style_stmt->fetch(PDO::FETCH_ASSOC);
+
+        return [
+            'staff' => $staff,
+            'auth_sig_path' => $auth_sig_path,
+            'styles' => $styles,
+        ];
+
+    } catch (Exception $e) {
+        error_log("ID Card Data Fetch Error for staff_id {$staff_id}: " . $e->getMessage());
+        return null;
+    }
+}

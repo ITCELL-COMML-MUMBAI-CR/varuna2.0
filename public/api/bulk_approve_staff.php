@@ -51,9 +51,11 @@ try {
     $pdo->commit();
     
     // 5. Logging and Success Response
-    log_activity($pdo, 'STAFF_BULK_APPROVE', [
-        'details' => "Bulk approved $affected_rows staff members. IDs: " . implode(', ', $sanitized_ids)
-    ]);
+    foreach ($sanitized_ids as $staff_id) {
+        log_activity($pdo, 'STAFF_STATUS_UPDATE', [
+            'details' => "Staff ID $staff_id status updated to approved via bulk operation."
+        ]);
+    }
     
     $response = [
         'success' => true,
