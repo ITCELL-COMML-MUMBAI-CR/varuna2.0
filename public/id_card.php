@@ -188,7 +188,11 @@ try {
                     <div class='qrimg'><?php echo generateQR($staff['id']); ?></div>
                     <div class='authsign'>
                         <img class='authimg' src='<?php echo BASE_URL . "uploads/authority/" . htmlspecialchars($auth_sig_path); ?>'>
-                        <p>Issuing Authority <br> CCI <?php echo htmlspecialchars($staff['section_code']); ?> </p>
+                        <?php if ($staff['section_code'] == 'TRAIN'): ?>
+                            <p>Issuing Authority <br> ACM CP</p>
+                        <?php else: ?>
+                            <p>Issuing Authority <br> CCI <?php echo htmlspecialchars($staff['section_code']); ?> </p>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

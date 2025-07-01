@@ -16,28 +16,50 @@ try {
     $params = [];
     $contract_where_clause = '';
     $staff_where_clause = '';
+    $staff_and_clause = '';
 
     // --- Dynamically build WHERE clauses based on user role ---
     if ($role === 'SCI') {
-        if (!empty($_SESSION['section'])) {
+        // Handle sci_cp users
+        if ($_SESSION['designation'] === 'CCI CP') {
+            // For sci_cp users, include both TRAIN section and their department section if available
+            $conditions = ["c.section_code = 'TRAIN'"]; // Default access to TRAIN section
+            if (!empty($_SESSION['department_section'])) {
+                $conditions[] = "c.contract_type IN (SELECT vct.ContractType FROM varuna_contract_types vct WHERE vct.Section = ?)";
+                $params[] = $_SESSION['department_section'];
+            }
+            $contract_where_clause = "WHERE (" . implode(" OR ", $conditions) . ")";
+            // Staff clause for sci_cp needs to match the same conditions
+            $staff_where_clause = "WHERE s.contract_id IN (SELECT c.id FROM contracts c WHERE " . implode(" OR ", $conditions) . ")";
+        }
+        // Regular SCI with section assigned
+        else if (!empty($_SESSION['section'])) {
             $contract_where_clause = "WHERE c.section_code = ?";
             $params[] = $_SESSION['section'];
-        } elseif (!empty($_SESSION['department_section'])) {
+            $staff_where_clause = "WHERE s.contract_id IN (SELECT c.id FROM contracts c WHERE c.section_code = ?)";
+        } 
+        // SCI with department section only
+        else if (!empty($_SESSION['department_section'])) {
             $contract_where_clause = "WHERE c.contract_type IN (SELECT vct.ContractType FROM varuna_contract_types vct WHERE vct.Section = ?)";
             $params[] = $_SESSION['department_section'];
-        } else {
+            $staff_where_clause = "WHERE s.contract_id IN (SELECT c.id FROM contracts c WHERE c.contract_type IN (SELECT vct.ContractType FROM varuna_contract_types vct WHERE vct.Section = ?))";
+        } 
+        else {
             // SCI with no section assigned sees no data
             $contract_where_clause = "WHERE 1=0";
+            $staff_where_clause = "WHERE 1=0";
         }
-        
-        // Staff clause depends on the contract clause
-        $staff_where_clause = "WHERE s.contract_id IN (SELECT c.id FROM contracts c {$contract_where_clause})";
+
+        // Generate complementary AND clause for queries that already have a WHERE
+        if (!empty($staff_where_clause)) {
+            $staff_and_clause = preg_replace('/^WHERE/i', 'AND', $staff_where_clause, 1);
+        }
     }
 
     // --- Define Base SQL Queries ---
     $base_from_clause = "FROM contracts c
         LEFT JOIN varuna_licensee l ON c.licensee_id = l.id
-        LEFT JOIN varuna_staff s ON c.id = s.contract_id";
+        LEFT JOIN varuna_staff s ON c.id = s.contract_id ";
 
     // --- Execute All Queries ---
 
@@ -167,7 +189,7 @@ try {
             OR s.medical_expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
             OR s.ta_expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
         )
-        {$staff_where_clause}
+        {$staff_and_clause}
         ORDER BY expiry_date ASC";
     $stmt = $pdo->prepare($expiring_docs_sql);
     $stmt->execute($params);
@@ -198,6 +220,7 @@ try {
     echo json_encode([
         'success' => false,
         'error'   => 'An error occurred while fetching dashboard data. Please try again later.',
-        'debug_info' => $e->getMessage() // For development purposes
+        'debug_info' => $e->getMessage(),// For development purposes
+        'contract_type_sql' => $contract_type_sql
     ]);
 }

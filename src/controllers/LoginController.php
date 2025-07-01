@@ -17,7 +17,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $password = $_POST['password'];
 
     // 1. UPDATED QUERY: Add 'section' to the columns being selected
-    $stmt = $pdo->prepare("SELECT id, username, password, role, section FROM varuna_users WHERE username = :username AND status = 'active'");
+    $stmt = $pdo->prepare("SELECT id, username, password, role, section, designation FROM varuna_users WHERE username = :username AND status = 'active'");
     $stmt->bindParam(':username', $username);
     $stmt->execute();
 
@@ -28,6 +28,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['role'] = $user['role'];
+            $_SESSION['designation'] = $user['designation'];
             
             // 2. ADD THIS LINE: Store the user's section in the session
             $_SESSION['section'] = $user['section'];
