@@ -34,10 +34,10 @@ try {
     foreach ($doc_types as $doc_type) {
         $field_name = $doc_type . '_image';
         if (isset($_FILES[$field_name]) && $_FILES[$field_name]['error'] == UPLOAD_ERR_OK) {
-            $safeStaffName = preg_replace("/[^a-zA-Z0-9_]/", "", str_replace(" ", "_", $_POST['name']));
-            $newFileName = $staff_id . '_' . $safeStaffName . '_' . $doc_type . '.' . pathinfo($_FILES[$field_name]['name'], PATHINFO_EXTENSION);
+            $newFileName = $staff_id . '_' . $doc_type . '.' . pathinfo($_FILES[$field_name]['name'], PATHINFO_EXTENSION);
             
-            $new_filename = process_image_upload($_FILES[$field_name], 'uploads/staff/', $newFileName);
+            // Use absolute upload directory to ensure files are saved in the intended location
+            $new_filename = process_image_upload($_FILES[$field_name], $upload_dir, $newFileName);
             
             if (is_array($new_filename)) { // Check if process_image_upload returned an error array
                 throw new Exception(implode(', ', $new_filename));

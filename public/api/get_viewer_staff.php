@@ -76,6 +76,7 @@ try {
     $data_sql = "SELECT 
                     s.id, s.profile_image, s.name, s.designation, s.contact, s.adhar_card_number, s.status,
                     s.police_image, s.police_expiry_date, s.medical_image, s.medical_expiry_date,
+                    s.ta_image, s.ta_expiry_date, s.ppo_image, s.adhar_card_image, s.signature_image,
                     c.contract_name, c.station_code, l.name as licensee_name "
                  . $from_and_joins . $where_sql . " ORDER BY s.name ASC LIMIT ? OFFSET ?";
     

@@ -80,10 +80,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     foreach ($doc_types as $doc_type) {
         $field_name = $doc_type . '_image';
         if (isset($_FILES[$field_name]) && $_FILES[$field_name]['error'] == UPLOAD_ERR_OK) {
-            $safeStaffName = preg_replace("/[^a-zA-Z0-9_]/", "", str_replace(" ", "_", $_POST['name']));
-            // Changed adhar_card to just adhar to keep filename shorter/cleaner
+            // Use id_doctype.extension format (e.g., {ID}_profile.jpg)
             $file_doc_type = ($doc_type === 'adhar_card') ? 'adhar' : $doc_type;
-            $newFileName = $newStaffId . '_' . $safeStaffName . '_' . $file_doc_type . '.' . pathinfo($_FILES[$field_name]['name'], PATHINFO_EXTENSION);
+            $newFileName = $newStaffId . '_' . $file_doc_type . '.' . pathinfo($_FILES[$field_name]['name'], PATHINFO_EXTENSION);
             
             $result = process_image_upload($_FILES[$field_name], $upload_dir, $newFileName);
 

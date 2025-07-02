@@ -45,8 +45,7 @@ try {
     foreach ($doc_types as $doc_type) {
         $field_name = $doc_type . '_image';
         if (isset($_FILES[$field_name]) && $_FILES[$field_name]['error'] == UPLOAD_ERR_OK) {
-            $safeStaffName = preg_replace("/[^a-zA-Z0-9_]/", "", str_replace(" ", "_", $_POST['name']));
-            $newFileName = $newStaffId . '_' . $safeStaffName . '_' . $doc_type . '.' . pathinfo($_FILES[$field_name]['name'], PATHINFO_EXTENSION);
+            $newFileName = $newStaffId . '_' . $doc_type . '.' . pathinfo($_FILES[$field_name]['name'], PATHINFO_EXTENSION);
             
             $result = process_image_upload($_FILES[$field_name], $upload_dir, $newFileName);
             if (is_array($result)) { throw new Exception('File Upload Error: ' . implode(', ', $result)); }

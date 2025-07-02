@@ -54,12 +54,31 @@ document.addEventListener("DOMContentLoaded", function () {
             }},
             { "data": null, "orderable": false, "render": function(data, type, row) {
                 let docLinks = '';
-                if (row.police_image) {
-                    docLinks += `<a href="${BASE_URL}uploads/staff/${row.police_image}" target="_blank">Police (Exp: ${row.police_expiry_date})</a><br>`;
+                // Define an array of document configurations to iterate over
+                const docTypes = [
+                    { key: 'police_image', label: 'Police', dateField: 'police_expiry_date' },
+                    { key: 'medical_image', label: 'Medical', dateField: 'medical_expiry_date' },
+                    { key: 'ta_image', label: 'TA', dateField: 'ta_expiry_date' },
+                    { key: 'ppo_image', label: 'PPO' },
+                    { key: 'adhar_card_image', label: 'Aadhar Card' },
+                    { key: 'signature_image', label: 'Signature' }
+                ];
+
+                docTypes.forEach(dt => {
+                    if (row[dt.key]) {
+                        let linkText = dt.label;
+                        if (dt.dateField && row[dt.dateField]) {
+                            linkText += ` (Exp: ${row[dt.dateField]})`;
+                        }
+                        docLinks += `<a href="${BASE_URL}uploads/staff/${row[dt.key]}" target="_blank">${linkText}</a><br>`;
+                    }
+                });
+
+                // Remove the trailing <br> if exists
+                if (docLinks.endsWith('<br>')) {
+                    docLinks = docLinks.slice(0, -4);
                 }
-                if (row.medical_image) {
-                    docLinks += `<a href="${BASE_URL}uploads/staff/${row.medical_image}" target="_blank">Medical (Exp: ${row.medical_expiry_date})</a>`;
-                }
+
                 return docLinks || 'No documents';
             }}
         ],

@@ -42,6 +42,10 @@ document.addEventListener("DOMContentLoaded", function () {
     if (tableInfo.name === "varuna_licensee") {
       buttons += `<button class="btn-action link" title="Generate Access Link" data-id="${id}">🔗</button>`;
     }
+    // Add the "View Documents" button exclusively for contracts table
+    if (tableInfo.name === "contracts") {
+      buttons = `<button class="btn-action docs" title="View Documents" data-id="${id}">📑</button>` + buttons;
+    }
     return buttons;
   }
 
@@ -54,9 +58,15 @@ document.addEventListener("DOMContentLoaded", function () {
       .querySelector('meta[name="csrf-token"]')
       .getAttribute("content");
 
-    let formContent = `<form id="editRecordForm" action="${BASE_URL}api/admin/update_record.php" method="POST">
+    // Decide endpoint and enctype based on table name
+    const actionUrl = tableName === 'contracts'
+      ? `${BASE_URL}api/admin/update_contract.php`
+      : `${BASE_URL}api/admin/update_record.php`;
+    const encAttr = tableName === 'contracts' ? 'enctype="multipart/form-data"' : '';
+
+    let formContent = `<form id="editRecordForm" action="${actionUrl}" method="POST" ${encAttr}>
             <input type="hidden" name="csrf_token" value="${csrfToken}">
-            <input type="hidden" name="table_name" value="${tableName}">`;
+            ${tableName !== 'contracts' ? `<input type="hidden" name="table_name" value="${tableName}">` : ''}`;
 
     // Fetch form data if editing a user
     let formData = {};
@@ -90,21 +100,18 @@ document.addEventListener("DOMContentLoaded", function () {
                         <input type="text" name="mobile_number" value="${
                           data.mobile_number || ""
                         }" required>
-                    </div>
-                    <div class="input-group">
-                        <label>Status</label>
-                        <select name="status" required>
-                            <option value="active" ${
-                              data.status === "active" ? "selected" : ""
-                            }>Active</option>
-                            <option value="inactive" ${
-                              data.status === "inactive" ? "selected" : ""
-                            }>Inactive</option>
-                        </select>
                     </div>`;
         break;
 
       case "contracts":
+        // Fetch document requirements synchronously before rendering form
+        let docReqs = {};
+        try {
+          const res = await fetch(`${BASE_URL}api/get_contract_data.php?id=${encodeURIComponent(data.id)}`);
+          const resJson = await res.json();
+          if (resJson.success) docReqs = resJson.doc_reqs || {};
+        } catch (e) { console.warn('Could not load doc requirements', e); }
+
         formContent += `
                     <input type="hidden" name="id_column" value="id">
                     <input type="hidden" name="id_value" value="${data.id}">
@@ -141,22 +148,39 @@ document.addEventListener("DOMContentLoaded", function () {
                     <div class="input-group">
                         <label>Status</label>
                         <select name="status" required>
-                            <option value="Regular" ${
-                              data.status === "Regular" ? "selected" : ""
-                            }>Regular</option>
-                            <option value="Under extension" ${
-                              data.status === "Under extension"
-                                ? "selected"
-                                : ""
-                            }>Under extension</option>
-                            <option value="Expired" ${
-                              data.status === "Expired" ? "selected" : ""
-                            }>Expired</option>
-                            <option value="Terminated" ${
-                              data.status === "Terminated" ? "selected" : ""
-                            }>Terminated</option>
+                            <option value="Regular" ${data.status === 'Regular' ? 'selected' : ''}>Regular</option>
+                            <option value="Under extension" ${data.status === 'Under extension' ? 'selected' : ''}>Under extension</option>
+                            <option value="Expired" ${data.status === 'Expired' ? 'selected' : ''}>Expired</option>
+                            <option value="Terminated" ${data.status === 'Terminated' ? 'selected' : ''}>Terminated</option>
                         </select>
-                    </div>`;
+                    </div>
+                    <h3 style="margin-top:20px;">Documents</h3>
+                    `;
+
+        // Dynamically append document inputs based on docReqs flags
+        const docInputMapping = {
+          FSSAI: { field: 'fssai_image', label: 'FSSAI Image', current: data.fssai_image },
+          FireSafety: { field: 'fire_safety_image', label: 'Fire Safety Image', current: data.fire_safety_image },
+          PestControl: { field: 'pest_control_image', label: 'Pest Control Image', current: data.pest_control_image },
+          WaterSafety: { field: 'water_safety_image', label: 'Water Safety Image', current: data.water_safety_image }
+        };
+
+        for (const [reqKey, cfg] of Object.entries(docInputMapping)) {
+          if (docReqs[reqKey] === 'Y') {
+            formContent += `
+              <div class="input-group">
+                <label>${cfg.label} ${cfg.current ? `(current: <a href=\"${BASE_URL}uploads/contracts/${cfg.current}\" target=\"_blank\">View</a>)` : ''}</label>
+                <input type="file" name="${cfg.field}" accept="image/*">
+              </div>`;
+          }
+        }
+
+        if (docReqs.RailNeerAvailability === 'Y') {
+          formContent += `<div class="input-group">
+                          <label>Rail Neer Stock</label>
+                          <input type="number" name="rail_neer_stock" value="${data.rail_neer_stock || ''}">
+                       </div>`;
+        }
         break;
 
       case "varuna_users":
@@ -432,6 +456,59 @@ $('.page-container').on('click', '.btn-action.terminate', function() {
           });
         }
       });
+  });
+
+  // Handle View Documents Button Clicks (Contracts)
+  $(".page-container").on("click", ".btn-action.docs", async function () {
+    const contractId = $(this).data("id");
+
+    editModalBody.innerHTML = "<p>Loading documents...</p>";
+    editModalTitle.textContent = "Contract Documents";
+    editModal.classList.remove("hidden");
+
+    try {
+      const response = await fetch(`${BASE_URL}api/get_contract_data.php?id=${encodeURIComponent(contractId)}`);
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.message || 'Unable to fetch contract data');
+      }
+
+      // Prepare document links/content filtered by required docs
+      const contract = result.contract;
+      const reqs = result.doc_reqs || {};
+      const docsMapping = {
+        fssai_image: { label: "FSSAI", reqKey: "FSSAI" },
+        fire_safety_image: { label: "Fire Safety", reqKey: "FireSafety" },
+        pest_control_image: { label: "Pest Control", reqKey: "PestControl" },
+        water_safety_image: { label: "Water Safety", reqKey: "WaterSafety" }
+      };
+
+      let docsHtml = "";
+      for (const [key, cfg] of Object.entries(docsMapping)) {
+        if (reqs[cfg.reqKey] === 'Y') {
+          if (contract[key]) {
+            docsHtml += `<div class="doc-link"><a href="${BASE_URL}uploads/contracts/${contract[key]}" target="_blank">${cfg.label}</a></div>`;
+          } else {
+            docsHtml += `<div class="doc-missing">${cfg.label}: <em>Not uploaded</em></div>`;
+          }
+        }
+      }
+
+      // Rail Neer Stock placeholder
+      if (reqs.RailNeerAvailability === 'Y') {
+        if (contract.rail_neer_stock !== null && contract.rail_neer_stock !== undefined) {
+          docsHtml += `<div class="rail-neer-stock"><strong>Rail Neer Stock:</strong> ${contract.rail_neer_stock}</div>`;
+        } else {
+          docsHtml += `<div class="rail-neer-stock"><strong>Rail Neer Stock:</strong> <em>Not recorded</em></div>`;
+        }
+      }
+
+      editModalBody.innerHTML = docsHtml;
+    } catch (err) {
+      console.error(err);
+      editModalBody.innerHTML = `<p style="color:red;">Failed to load documents.</p>`;
+    }
   });
 
   // Close Modal Logic

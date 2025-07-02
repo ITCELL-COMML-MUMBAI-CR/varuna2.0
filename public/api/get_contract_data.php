@@ -32,8 +32,8 @@ try {
     if ($contract) {
         // 2. Get Document Requirements based on Contract Type
         // =================== SQL QUERY UPDATED ===================
-        // Added 'AadharCard' to the SELECT statement.
-        $stmt_docs = $pdo->prepare("SELECT Police, Medical, TA, PPO, AadharCard FROM varuna_contract_types WHERE ContractType = ?");
+        // Added 'FSSAI', 'FireSafety', 'PestControl', 'RailNeerAvailability', and 'WaterSafety' to the SELECT statement.
+        $stmt_docs = $pdo->prepare("SELECT Police, Medical, TA, PPO, AadharCard, FSSAI, FireSafety, PestControl, RailNeerAvailability, WaterSafety FROM varuna_contract_types WHERE ContractType = ?");
         // =========================================================
         $stmt_docs->execute([trim($contract['contract_type'])]);
         $doc_reqs = $stmt_docs->fetch(PDO::FETCH_ASSOC);
