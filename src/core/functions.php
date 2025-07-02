@@ -69,7 +69,12 @@ function process_image_upload($file, $uploadDir = 'uploads/', $newFileName = '')
     $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
     $finalFileName = !empty($newFileName) ? $newFileName : uniqid('', true) . '.' . $fileExtension;
     
-    $destination = $uploadDir . $finalFileName;
+    $destination = rtrim($uploadDir, '/\\') . DIRECTORY_SEPARATOR . $finalFileName;
+
+    // Remove existing file to avoid move_uploaded_file failures on some systems (especially Windows)
+    if (file_exists($destination)) {
+        @unlink($destination);
+    }
 
     // 3. Compress image if needed
     $compressionTargetSize = 2 * 1024 * 1024; // 2 MB

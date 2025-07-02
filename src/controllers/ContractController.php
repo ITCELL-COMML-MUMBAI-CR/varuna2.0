@@ -75,7 +75,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // --- File Upload Processing ---
     $stmt = $pdo->query("SHOW TABLE STATUS LIKE 'contracts'");
     $next_id = $stmt->fetch(PDO::FETCH_ASSOC)['Auto_increment'];
-    $upload_dir = 'uploads/contracts/';
+    $upload_dir = PROJECT_ROOT . '/public/uploads/contracts/';
     if (!is_dir($upload_dir)) { mkdir($upload_dir, 0755, true); }
     $uploaded_files = [];
     $file_fields = ['fssai_image' => 'fssai', 'fire_safety_image' => 'firesafety', 'pest_control_image' => 'pestcontrol', 'water_safety_image' => 'watersafety'];
