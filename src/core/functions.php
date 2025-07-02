@@ -74,16 +74,39 @@ function process_image_upload($file, $uploadDir = 'uploads/', $newFileName = '')
     // 3. Compress image if needed
     $compressionTargetSize = 2 * 1024 * 1024; // 2 MB
     if ($fileSize > $compressionTargetSize) {
+        $image = false; // Initialize image variable
         switch ($fileType) {
-            case 'image/jpeg': $image = imagecreatefromjpeg($fileTmpName); break;
-            case 'image/png': $image = imagecreatefrompng($fileTmpName); break;
-            case 'image/gif': $image = imagecreatefromgif($fileTmpName); break;
-            case 'image/webp': $image = imagecreatefromwebp($fileTmpName); break;
-            default: $image = false;
+            case 'image/jpeg':
+                $image = @imagecreatefromjpeg($fileTmpName);
+                if ($image) {
+                    imagejpeg($image, $destination, 75);
+                }
+                break;
+            case 'image/png':
+                $image = @imagecreatefrompng($fileTmpName);
+                if ($image) {
+                    imagepng($image, $destination, 6); // Compression level 0-9
+                }
+                break;
+            case 'image/gif':
+                $image = @imagecreatefromgif($fileTmpName);
+                if ($image) {
+                    imagegif($image, $destination);
+                }
+                break;
+            case 'image/webp':
+                $image = @imagecreatefromwebp($fileTmpName);
+                if ($image) {
+                    imagewebp($image, $destination, 80);
+                }
+                break;
         }
+
         if ($image) {
-            imagejpeg($image, $destination, 75);
             imagedestroy($image);
+        } else {
+            // Fallback to simple move if image creation fails or type not handled
+            move_uploaded_file($fileTmpName, $destination);
         }
     } else {
         move_uploaded_file($fileTmpName, $destination);
@@ -170,12 +193,7 @@ function get_staff_card_data($pdo, $staff_id) {
             return null;
         }
         
-        $log_stmt = $pdo->prepare("
-            SELECT user_id FROM varuna_activity_log 
-            WHERE action = 'STAFF_STATUS_UPDATE' AND details LIKE ? ORDER BY timestamp DESC LIMIT 1
-        ");
-        $log_stmt->execute(["%Staff ID $staff_id status updated to approved%"]);
-        $approver_id = $log_stmt->fetchColumn();
+        $approver_id = $staff['approved_by'];
         
         $auth_sig_path = '';
         if ($approver_id) {

@@ -205,13 +205,13 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!rowData) return;
       viewModalBody.innerHTML = "<p>Loading full staff details...</p>";
       viewModal.classList.remove("hidden");
-      fetch(`${BASE_URL}api/get_staff_details.php?id=${rowData.id}`)
+      fetch(`${BASE_URL}api/get_staff_details.php?staff_id=${rowData.id}`)
         .then((res) => res.json())
         .then((data) => {
           if (data.success) {
             buildAndShowViewModal(data.staff);
           } else {
-            viewModalBody.innerHTML = `<p class="error-text">Could not load details.</p>`;
+            viewModalBody.innerHTML = `<p class="error-text">${data.message || 'Could not load details.'}</p>`;
           }
         });
     });

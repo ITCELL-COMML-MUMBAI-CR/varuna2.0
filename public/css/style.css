@@ -690,11 +690,12 @@ body {
 }
 
 .modal-profile-img {
-    width: 150px; /* Adjust width as needed */
-    height: 200px; /* Adjust height as needed */
-    object-fit: cover;
-    border-radius: 8px;
     display: block;
+    width: 150px !important;
+    height: 200px !important;
+    object-fit: cover;
+    border: 1px solid #ccc;
+    border-radius: 4px;
     margin: 0 auto;
 }
 

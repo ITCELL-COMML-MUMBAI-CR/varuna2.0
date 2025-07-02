@@ -237,20 +237,44 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  $(document).on("submit", "#editStaffFormApproved", function (e) {
+  $(document).on("submit", "#editStaffForm", function (e) {
     e.preventDefault();
-    const formData = new FormData(this);
-    fetch(this.action, { method: "POST", body: formData })
+    const form = this;
+    const formData = new FormData(form);
+    const submitButton = form.querySelector('button[type="submit"]');
+
+    submitButton.innerHTML = `<span><i class="fa fa-spinner fa-spin"></i> Updating...</span>`;
+    submitButton.disabled = true;
+
+    fetch(`${BASE_URL}api/update_staff_details.php`, {
+      method: "POST",
+      body: formData,
+    })
       .then((res) => res.json())
       .then((response) => {
         refreshToken(response.new_csrf_token);
         if (response.success) {
           editModal.classList.add("hidden");
-          Swal.fire("Updated!", response.message, "success");
-          approvedTable.ajax.reload(null, false);
+          Swal.fire({
+                toast: true,
+                position: "top-end",
+                icon: "success",
+                title: response.message,
+                showConfirmButton: false,
+                timer: 3500,
+                timerProgressBar: true,
+            });
+          approvedTable.ajax.reload(null, false); // Refresh datatable
         } else {
-          Swal.fire("Error!", response.message, "error");
+          throw new Error(response.message || "An unknown error occurred.");
         }
+      })
+      .catch((error) => {
+        Swal.fire("Error!", error.message, "error");
+      })
+      .finally(() => {
+        submitButton.innerHTML = "Update & Resubmit";
+        submitButton.disabled = false;
       });
   });
 
@@ -287,7 +311,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     Swal.fire({
       title: "Terminate this Staff Member?",
-      text: `This will set staff member ${staffId}'s status to Terminated. They can be re-approved later by an SCI.`,
+      text: `This will Terminate staff member ${staffId}. They can be re-approved later by an SCI.`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Yes, terminate!",
