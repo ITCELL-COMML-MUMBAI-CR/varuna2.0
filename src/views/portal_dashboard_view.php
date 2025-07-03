@@ -1,5 +1,11 @@
 <?php
 // This view is only ever loaded by the PortalController after a successful token validation.
+
+// Double-check session validity
+if (!isset($_SESSION['is_licensee_portal']) || !isset($_SESSION['licensee_id']) || !isset($_SESSION['licensee_name'])) {
+    require_once __DIR__ . '/errors/invalid_link_view.php';
+    exit();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">

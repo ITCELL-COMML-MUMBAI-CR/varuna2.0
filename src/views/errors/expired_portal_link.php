@@ -1,10 +1,13 @@
-<?php http_response_code(403); ?>
+<?php
+// Set the HTTP response code to 403 (Forbidden)
+http_response_code(403);
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invalid Link - VARUNA System</title>
+    <title>Link Expired - VARUNA System</title>
     <link rel="stylesheet" href="<?php echo defined('BASE_URL') ? BASE_URL : '../public/css/style.css'; ?>">
     <style>
         body {
@@ -95,15 +98,15 @@
     </div>
     
     <div class="error-container">
-        <h1 class="error-heading">Invalid Access Link</h1>
+        <h1 class="error-heading">Portal Link Expired</h1>
         <p class="error-message">
-            The portal access link you are trying to use is invalid or has been modified.
-            This may happen if the link was typed incorrectly or has been tampered with.
+            The licensee portal access link you are trying to use has expired or is no longer valid. 
+            This may happen due to security reasons or if the link has exceeded its validity period.
         </p>
         <div class="contact-info">
             <strong>What to do next?</strong><br>
-            Please contact your issuing authority or administrator to request a valid access link.
+            Please contact your issuing authority or administrator to request a new access link.
         </div>
     </div>
 </body>
-</html>
+</html> 
