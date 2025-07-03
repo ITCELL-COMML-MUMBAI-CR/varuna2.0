@@ -100,7 +100,15 @@ document.addEventListener("DOMContentLoaded", function () {
                         <input type="text" name="mobile_number" value="${
                           data.mobile_number || ""
                         }" required>
-                    </div>`;
+                    </div>
+                    <div class="input-group">
+                        <label>Status</label>
+                        <select name="status" required>
+                            <option value="Regular" ${data.status === 'Regular' ? 'selected' : ''}>Regular</option>
+                            <option value="Terminated" ${data.status === 'Terminated' ? 'selected' : ''}>Terminated</option>
+                        </select>
+                    </div>
+                    `;
         break;
 
       case "contracts":

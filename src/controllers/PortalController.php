@@ -18,7 +18,7 @@ if (empty($token)) {
 
 // Prepare to validate the token against the database.
 $stmt = $pdo->prepare(
-    "SELECT l.id as licensee_id, l.name as licensee_name, t.expires_at, t.is_active 
+    "SELECT l.id as licensee_id, l.name as licensee_name, l.status as licensee_status, t.expires_at, t.is_active 
      FROM varuna_access_tokens t
      JOIN varuna_licensee l ON t.licensee_id = l.id
      WHERE t.token = ? LIMIT 1"
@@ -27,8 +27,8 @@ $stmt->execute([$token]);
 $token_data = $stmt->fetch();
 
 // Check for all failure conditions.
-if (!$token_data || !$token_data['is_active'] || new DateTime() > new DateTime($token_data['expires_at'])) {
-    // Token is not found, not active, or has expired.
+if (!$token_data || !$token_data['is_active'] || strtolower($token_data['licensee_status']) === 'terminated' || new DateTime() > new DateTime($token_data['expires_at'])) {
+    // Token is not found, not active, has expired, or licensee is terminated.
     require_once __DIR__ . '/../views/errors/invalid_link_view.php';
     exit();
 }

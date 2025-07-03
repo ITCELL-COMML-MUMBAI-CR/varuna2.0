@@ -29,6 +29,10 @@ try {
     // Terminate the licensee
     $licensee_stmt = $pdo->prepare("UPDATE varuna_licensee SET status = 'Terminated' WHERE id = ?");
     $licensee_stmt->execute([$licensee_id]);
+
+    // Deactivate all existing portal access tokens for this licensee so that previously generated links become invalid
+    $token_stmt = $pdo->prepare("UPDATE varuna_access_tokens SET is_active = 0 WHERE licensee_id = ?");
+    $token_stmt->execute([$licensee_id]);
     
     $pdo->commit();
     log_activity($pdo, 'LICENSEE_TERMINATE', ['details' => "Terminated licensee ID: $licensee_id and all associated contracts/staff."]);

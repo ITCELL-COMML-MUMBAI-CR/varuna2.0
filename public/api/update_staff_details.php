@@ -21,28 +21,49 @@ if (empty($staff_id)) {
     exit();
 }
 
+// --- BUSINESS RULE GUARD ---
+// Prevent re-engaging staff if its contract or licensee is terminated or staff itself terminated
+$parent_stmt = $pdo->prepare("SELECT s.status AS staff_status, c.status AS contract_status, l.status AS licensee_status FROM varuna_staff s JOIN contracts c ON s.contract_id = c.id JOIN varuna_licensee l ON c.licensee_id = l.id WHERE s.id = ? LIMIT 1");
+$parent_stmt->execute([$staff_id]);
+$parent_row = $parent_stmt->fetch();
+if (!$parent_row) {
+    echo json_encode(['success' => false, 'message' => 'Staff not found.']);
+    exit();
+}
+
+$contract_status = strtolower($parent_row['contract_status']);
+$licensee_status = strtolower($parent_row['licensee_status']);
+$staff_status_current = strtolower($parent_row['staff_status']);
+
+if ($licensee_status === 'terminated' || $contract_status === 'terminated' || $staff_status_current === 'terminated') {
+    echo json_encode(['success' => false, 'message' => 'Cannot edit or resubmit staff while contract or licensee is terminated.']);
+    exit();
+}
+
 try {
     $pdo->beginTransaction();
     $upload_dir = __DIR__ . '/../../public/uploads/staff/';
-    if (!is_dir($upload_dir)) { mkdir($upload_dir, 0755, true); }
+    if (!is_dir($upload_dir)) {
+        mkdir($upload_dir, 0755, true);
+    }
 
     // --- File Update Logic ---
     $update_file_clauses = [];
     $file_data_to_bind = [];
     $doc_types = ['police', 'medical', 'ta', 'ppo', 'profile', 'signature', 'adhar_card'];
-    
+
     foreach ($doc_types as $doc_type) {
         $field_name = $doc_type . '_image';
         if (isset($_FILES[$field_name]) && $_FILES[$field_name]['error'] == UPLOAD_ERR_OK) {
             $newFileName = $staff_id . '_' . $doc_type . '.' . pathinfo($_FILES[$field_name]['name'], PATHINFO_EXTENSION);
-            
+
             // Use absolute upload directory to ensure files are saved in the intended location
             $new_filename = process_image_upload($_FILES[$field_name], $upload_dir, $newFileName);
-            
+
             if (is_array($new_filename)) { // Check if process_image_upload returned an error array
                 throw new Exception(implode(', ', $new_filename));
             }
-            
+
             $update_file_clauses[] = "$field_name = :$field_name";
             $file_data_to_bind[$field_name] = $new_filename;
         }
@@ -62,7 +83,7 @@ try {
     if (!empty($update_file_clauses)) {
         $sql .= ", " . implode(", ", $update_file_clauses);
     }
-    
+
     $sql .= " WHERE id = :staff_id";
 
     // Combine all data for binding
@@ -78,7 +99,7 @@ try {
         'medical_expiry_date' => !empty($_POST['medical_expiry_date']) ? $_POST['medical_expiry_date'] : null,
         'staff_id' => $staff_id
     ]);
-    
+
     $stmt = $pdo->prepare($sql);
     $stmt->execute($data_to_bind);
 
@@ -90,12 +111,16 @@ try {
 
     log_activity($pdo, 'STAFF_EDIT_RESUBMIT', ['details' => "Staff ID $staff_id edited and resubmitted."]);
     echo json_encode([
-        'success' => true, 
+        'success' => true,
         'message' => 'Staff details updated and sent for approval.',
         'new_csrf_token' => generate_csrf_token() // Generate and send a new token
     ]);
 } catch (Exception $e) {
     $pdo->rollBack();
     log_activity($pdo, 'STAFF_EDIT_FAIL', ['details' => $e->getMessage()]);
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    echo json_encode([
+        'success' => false,
+        'message' => $e->getMessage(),
+        'new_csrf_token' => generate_csrf_token() // Generate and send a new token
+    ]);
 }

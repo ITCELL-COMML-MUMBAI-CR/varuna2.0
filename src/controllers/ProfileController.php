@@ -32,6 +32,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             ");
             $stmt->execute([$user_id, $new_filename, $new_filename]);
             $_SESSION['success_message'] = "Signature uploaded successfully!";
+            // Update session with the new signature path so pages unlock immediately
+            $_SESSION['signature_path'] = $new_filename;
         }
     } else {
         $_SESSION['error_message'] = "No file was uploaded or an error occurred.";

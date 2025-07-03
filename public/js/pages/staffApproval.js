@@ -163,9 +163,11 @@ document.addEventListener("DOMContentLoaded", function () {
         {
             data: "id",
             orderable: false,
-            // Only SCI can re-engage, and they do so by editing the record
             render: function(data, type, row) {
-                return `<button class="btn-action edit" data-staff-id="${data}" title="Edit and Resubmit">✏️ Edit to Re-approve</button>`;
+                return `
+                    <button class="btn-action edit" data-staff-id="${data}" title="Edit and Resubmit">✏️ Edit to Re-approve</button>
+                    <button class="btn-action delete" data-staff-id="${data}" title="Delete Staff">🗑️ Delete</button>
+                `;
             }
         },
     ],
@@ -288,6 +290,47 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 });
+
+    // Add click handler for delete button in terminated staff table
+    $("#terminated_staff_table tbody").on("click", "button.delete", function () {
+        const staffId = $(this).data("staff-id");
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute("content");
+
+        Swal.fire({
+            title: "Delete Staff Member?",
+            text: "This will permanently delete this staff member. This action cannot be undone!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Yes, delete!",
+            confirmButtonColor: "#d9534f",
+            cancelButtonText: "Cancel"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const formData = new FormData();
+                formData.append("staff_id", staffId);
+                formData.append("csrf_token", csrfToken);
+
+                fetch(`${BASE_URL}api/delete_staff.php`, {
+                    method: "POST",
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(response => {
+                    refreshToken(response.new_csrf_token);
+                    if (response.success) {
+                        Swal.fire("Deleted!", response.message, "success");
+                        terminatedTable.ajax.reload(null, false);
+                    } else {
+                        Swal.fire("Error!", response.message, "error");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    Swal.fire("Error!", "An error occurred while deleting the staff member.", "error");
+                });
+            }
+        });
+    });
 
      if (selectAllCheckbox) {
         selectAllCheckbox.addEventListener('click', function() {

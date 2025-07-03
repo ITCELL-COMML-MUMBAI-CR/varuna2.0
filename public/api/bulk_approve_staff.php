@@ -33,6 +33,14 @@ try {
     }
     
     // 4. Database Operation within a Transaction
+    // --- BUSINESS RULE GUARD ---
+    $placeholders_guard = implode(',', array_fill(0, count($sanitized_ids), '?'));
+    $guard_stmt = $pdo->prepare("SELECT s.id FROM varuna_staff s JOIN contracts c ON s.contract_id = c.id JOIN varuna_licensee l ON c.licensee_id = l.id WHERE s.id IN ($placeholders_guard) AND (LOWER(c.status) = 'terminated' OR LOWER(l.status) = 'terminated' OR LOWER(s.status) = 'terminated') LIMIT 1");
+    $guard_stmt->execute($sanitized_ids);
+    if ($guard_stmt->fetch()) {
+        throw new Exception('Cannot approve staff while their contract or licensee is terminated.', 400);
+    }
+
     $pdo->beginTransaction();
 
     // Create the correct number of placeholders for the IN clause

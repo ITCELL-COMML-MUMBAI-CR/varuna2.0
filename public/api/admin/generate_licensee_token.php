@@ -20,6 +20,19 @@ try {
         throw new Exception('Licensee ID is required.', 400);
     }
 
+    // Ensure the licensee is not terminated before generating a token
+    $status_stmt = $pdo->prepare("SELECT status FROM varuna_licensee WHERE id = ? LIMIT 1");
+    $status_stmt->execute([$licensee_id]);
+    $licensee_status = $status_stmt->fetchColumn();
+
+    if ($licensee_status === false) {
+        throw new Exception('Licensee not found.', 404);
+    }
+
+    if (strtolower($licensee_status) === 'terminated') {
+        throw new Exception('Cannot generate access link for a terminated licensee.', 400);
+    }
+
     // Generate a cryptographically secure random token.
     $token = bin2hex(random_bytes(32)); 
     
