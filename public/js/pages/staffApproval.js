@@ -166,7 +166,7 @@ document.addEventListener("DOMContentLoaded", function () {
             render: function(data, type, row) {
                 return `
                     <button class="btn-action edit" data-staff-id="${data}" title="Edit and Resubmit">✏️ Edit to Re-approve</button>
-                    <button class="btn-action delete" data-staff-id="${data}" title="Delete Staff">🗑️ Delete</button>
+                    <button class="btn-action reject" data-staff-id="${data}" title="Delete Staff">🗑️ Delete</button>
                 `;
             }
         },
@@ -292,7 +292,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
     // Add click handler for delete button in terminated staff table
-    $("#terminated_staff_table tbody").on("click", "button.delete", function () {
+    $("#terminated_staff_table tbody").on("click", "button.reject", function() {
         const staffId = $(this).data("staff-id");
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute("content");
 

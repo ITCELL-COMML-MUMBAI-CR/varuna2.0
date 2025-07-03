@@ -66,9 +66,9 @@ try {
         $new_status = strtolower(trim($_POST['status']));
         $licensee_id = $id;
 
-        if ($new_status === 'regular') {
-            // 1) Set all contracts to Regular
-            $contract_stmt = $pdo->prepare("UPDATE contracts SET status = 'Regular' WHERE licensee_id = ?");
+        if ($new_status === 'active') {
+            // 1) Set all contracts to Active
+            $contract_stmt = $pdo->prepare("UPDATE contracts SET status = 'Active' WHERE licensee_id = ?");
             $contract_stmt->execute([$licensee_id]);
 
             // 2) Set all staff under those contracts to Pending

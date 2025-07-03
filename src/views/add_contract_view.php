@@ -117,7 +117,7 @@ $contract_docs_json = json_encode(array_column($contract_types, null, 'ContractT
                 <div class="input-group">
                     <label for="status">Status</label>
                     <select id="status" name="status" class="<?php echo in_array('status', $invalid_fields) ? 'is-invalid' : ''; ?>" required>
-                        <option value="Regular" <?php echo (isset($old_input['status']) && $old_input['status'] == 'Regular') ? 'selected' : ''; ?>>Regular</option>
+                        <option value="Active" <?php echo (isset($old_input['status']) && $old_input['status'] == 'Active') ? 'selected' : ''; ?>>Active</option>
                         <option value="Under extension" <?php echo (isset($old_input['status']) && $old_input['status'] == 'Under extension') ? 'selected' : ''; ?>>Under extension</option>
                         <option value="Expired" <?php echo (isset($old_input['status']) && $old_input['status'] == 'Expired') ? 'selected' : ''; ?>>Expired</option>
                         <option value="Terminated" <?php echo (isset($old_input['status']) && $old_input['status'] == 'Terminated') ? 'selected' : ''; ?>>Terminated</option>

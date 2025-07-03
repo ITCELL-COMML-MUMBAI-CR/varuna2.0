@@ -104,7 +104,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     <div class="input-group">
                         <label>Status</label>
                         <select name="status" required>
-                            <option value="Regular" ${data.status === 'Regular' ? 'selected' : ''}>Regular</option>
+                            <option value="Active" ${data.status === 'Active' ? 'selected' : ''}>Active</option>
                             <option value="Terminated" ${data.status === 'Terminated' ? 'selected' : ''}>Terminated</option>
                         </select>
                     </div>
@@ -156,7 +156,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     <div class="input-group">
                         <label>Status</label>
                         <select name="status" required>
-                            <option value="Regular" ${data.status === 'Regular' ? 'selected' : ''}>Regular</option>
+                            <option value="Active" ${data.status === 'Active' ? 'selected' : ''}>Active</option>
                             <option value="Under extension" ${data.status === 'Under extension' ? 'selected' : ''}>Under extension</option>
                             <option value="Expired" ${data.status === 'Expired' ? 'selected' : ''}>Expired</option>
                             <option value="Terminated" ${data.status === 'Terminated' ? 'selected' : ''}>Terminated</option>

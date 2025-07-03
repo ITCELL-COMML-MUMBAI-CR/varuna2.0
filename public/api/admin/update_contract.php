@@ -36,9 +36,9 @@ try {
         throw new Exception('Cannot change contract status while its licensee is terminated.', 400);
     }
 
-    // If the contract itself is terminated, its status can ONLY be changed to "Regular".
-    if ($current_contract_status === 'terminated' && $incoming_status && $incoming_status !== 'regular') {
-        throw new Exception('A terminated contract can only be reinstated to "Regular". Other status changes are not allowed.', 400);
+    // If the contract itself is terminated, its status can ONLY be changed to "Active".
+    if ($current_contract_status === 'terminated' && $incoming_status && $incoming_status !== 'active') {
+        throw new Exception('A terminated contract can only be reinstated to "Active". Other status changes are not allowed.', 400);
     }
 
     // --- 2. BEGIN TRANSACTION ---
@@ -113,7 +113,7 @@ try {
     // --- 4b. CASCADE STATUS TO STAFF IF NEEDED ---
     if (isset($_POST['status'])) {
         $incoming_status = strtolower(trim($_POST['status']));
-        if ($incoming_status === 'regular') {
+        if ($incoming_status === 'active') {
             // All staff under this contract go to Pending
             $staffCascade = $pdo->prepare("UPDATE varuna_staff SET status = 'Pending' WHERE contract_id = ?");
             $staffCascade->execute([$contract_id]);

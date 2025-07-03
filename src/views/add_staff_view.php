@@ -5,7 +5,7 @@ if (!defined('VARUNA_ENTRY_POINT') || !isset($_SESSION['user_id'])) {
 }
 
 // Fetch active contracts for the initial dropdown
-$contracts = $pdo->query("SELECT id, contract_name, station_code FROM contracts WHERE status = 'Regular' ORDER BY contract_name ASC")->fetchAll();
+$contracts = $pdo->query("SELECT id, contract_name, station_code FROM contracts WHERE status = 'Active' ORDER BY contract_name ASC")->fetchAll();
 $designations = $pdo->query("SELECT designation_name FROM varuna_staff_designation ORDER BY designation_name ASC")->fetchAll();
 
 // Session data handling for PRG pattern

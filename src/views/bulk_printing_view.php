@@ -13,7 +13,7 @@ $dept_section = $_SESSION['department_section'] ?? null;
 // Admins see all options
 if ($user_role === 'ADMIN') {
     $licensees = $pdo->query("SELECT id, name FROM varuna_licensee WHERE status = 'active' ORDER BY name ASC")->fetchAll();
-    $contracts = $pdo->query("SELECT id, contract_name, station_code FROM contracts WHERE status = 'Regular' ORDER BY contract_name ASC")->fetchAll();
+    $contracts = $pdo->query("SELECT id, contract_name, station_code FROM contracts WHERE status = 'Active' ORDER BY contract_name ASC")->fetchAll();
     $stations = $pdo->query("SELECT DISTINCT station_code FROM contracts WHERE station_code IS NOT NULL AND station_code != '' AND station_code NOT LIKE '%,%' ORDER BY station_code ASC")->fetchAll(PDO::FETCH_COLUMN);
     $sections = $pdo->query("SELECT Section_Code, Name FROM Section ORDER BY Name ASC")->fetchAll();
 } 
@@ -33,7 +33,7 @@ elseif ($user_role === 'SCI') {
 
     if (!empty($params)) {
         // Fetch contracts relevant to the SCI
-        $contracts_sql = "SELECT id, contract_name, station_code FROM contracts c WHERE c.status = 'Regular' AND $where_clause ORDER BY c.contract_name ASC";
+        $contracts_sql = "SELECT id, contract_name, station_code FROM contracts c WHERE c.status = 'Active' AND $where_clause ORDER BY c.contract_name ASC";
         $stmt = $pdo->prepare($contracts_sql);
         $stmt->execute($params);
         $contracts = $stmt->fetchAll();

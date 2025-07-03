@@ -25,7 +25,7 @@ if ($staff_id) {
         $doc_reqs = $doc_stmt->fetch();
         
         // --- NEW: Fetch all active contracts for the dropdown ---
-        $contracts_stmt = $pdo->query("SELECT id, contract_name, station_code FROM contracts WHERE status = 'Regular' ORDER BY contract_name ASC");
+        $contracts_stmt = $pdo->query("SELECT id, contract_name, station_code FROM contracts WHERE status = 'Active' ORDER BY contract_name ASC");
         $all_contracts = $contracts_stmt->fetchAll();
 
         $response = [
