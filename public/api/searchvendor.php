@@ -63,22 +63,23 @@ log_activity($pdo, 'QR_SCAN_VERIFY', [
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/style.css">
     <style>
         body { background-color: #f4f4f4; display: block; }
-        .verification-container { max-width: 600px; margin: 20px auto; background-color: #fff; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
-        .header { background: linear-gradient(135deg, #28a745, #218838); color: white; padding: 20px; text-align: center; }
+        .verification-container { max-width: 600px; margin: 15px auto; background-color: #fff; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #28a745, #218838); color: white; padding: 15px; text-align: center; }
         .header.invalid { background: linear-gradient(135deg, #dc3545, #c82333); }
-        .header h1 { margin: 0; font-size: 1.5rem; }
-        .content { padding: 20px; }
-        .profile-pic { display: block; width: 150px; height: 180px; object-fit: cover; margin: 0 auto 20px; border-radius: 8px; border: 4px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
-        .detail-item { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #eee; display: flex; align-items: center; }
-        .detail-item label { font-weight: bold; color: #555; flex-basis: 120px; }
-        .detail-item span { flex-grow: 1; }
+        .header h1 { margin: 0; font-size: 1.4rem; }
+        .content { padding: 15px; }
+        .profile-pic { display: block; width: 130px; height: 160px; object-fit: cover; margin: 0 auto 15px; border-radius: 8px; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        .detail-item { margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #eee; display: flex; align-items: center; }
+        .detail-item:last-child { margin-bottom: 0; padding-bottom: 0; }
+        .detail-item label { font-weight: 600; color: #444; flex-basis: 10px; font-size: 0.95rem; }
+        .detail-item span { flex-grow: 1; font-size: 0.95rem; }
         .status { font-weight: bold; text-transform: uppercase; }
         .status-approved { color: #28a745; }
-        .documents-section h2 { font-size: 1.2rem; margin-top: 30px; margin-bottom: 15px; border-bottom: 2px solid var(--primary-color); padding-bottom: 5px;}
-        .doc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; }
+        .documents-section h2 { font-size: 1.1rem; margin-top: 20px; margin-bottom: 12px; border-bottom: 2px solid var(--primary-color); padding-bottom: 4px;}
+        .doc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; }
         .doc-link { display: block; text-decoration: none; color: #333; text-align: center; }
-        .doc-link img { width: 100%; height: 150px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd; margin-bottom: 5px; }
-        .doc-link span { font-size: 0.8rem; }
+        .doc-link img { width: 100%; height: 140px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd; margin-bottom: 4px; }
+        .doc-link span { font-size: 0.75rem; line-height: 1.3; display: block; }
     </style>
 </head>
 <body>
@@ -137,6 +138,12 @@ log_activity($pdo, 'QR_SCAN_VERIFY', [
                     <a href="<?php echo BASE_URL . 'uploads/staff/' . htmlspecialchars($staff['medical_image']); ?>" target="_blank" class="doc-link">
                         <img src="<?php echo BASE_URL . 'uploads/staff/' . htmlspecialchars($staff['medical_image']); ?>" alt="Medical Fitness">
                         <span>Medical Fitness<br>(Expires: <?php echo htmlspecialchars($staff['medical_expiry_date']); ?>)</span>
+                    </a>
+                    <?php endif; ?>
+                    <?php if (!empty($staff['ta_image'])): ?>
+                    <a href="<?php echo BASE_URL . 'uploads/staff/' . htmlspecialchars($staff['ta_image']); ?>" target="_blank" class="doc-link">
+                        <img src="<?php echo BASE_URL . 'uploads/staff/' . htmlspecialchars($staff['ta_image']); ?>" alt="TA Document">
+                        <span>TA<br>(Expires: <?php echo htmlspecialchars($staff['ta_expiry_date']); ?>)</span>
                     </a>
                     <?php endif; ?>
                 </div>

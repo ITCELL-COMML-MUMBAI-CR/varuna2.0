@@ -78,6 +78,7 @@ try {
                 contract_id = :contract_id,
                 police_issue_date = :police_issue_date, police_expiry_date = :police_expiry_date,
                 medical_issue_date = :medical_issue_date, medical_expiry_date = :medical_expiry_date,
+                ta_expiry_date = :ta_expiry_date,
                 status = 'pending'";
 
     if (!empty($update_file_clauses)) {
@@ -97,6 +98,7 @@ try {
         'police_expiry_date' => !empty($_POST['police_expiry_date']) ? $_POST['police_expiry_date'] : null,
         'medical_issue_date' => !empty($_POST['medical_issue_date']) ? $_POST['medical_issue_date'] : null,
         'medical_expiry_date' => !empty($_POST['medical_expiry_date']) ? $_POST['medical_expiry_date'] : null,
+        'ta_expiry_date' => !empty($_POST['ta_expiry_date']) ? $_POST['ta_expiry_date'] : null,
         'staff_id' => $staff_id
     ]);
 

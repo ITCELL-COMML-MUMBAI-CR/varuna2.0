@@ -31,15 +31,16 @@ try {
         throw new Exception('Confirmation phrase does not match. Deletion cancelled.', 400);
     }
     
-    // Check if contract exists and get details
+    // Check if contract exists and get details, including document filenames
     $contract_check = $pdo->prepare("
-        SELECT c.contract_name, c.licensee_id, l.name as licensee_name 
+        SELECT c.contract_name, c.licensee_id, l.name as licensee_name, 
+               c.fssai_image, c.fire_safety_image, c.pest_control_image, c.water_safety_image
         FROM contracts c 
         LEFT JOIN varuna_licensee l ON c.licensee_id = l.id 
         WHERE c.id = ?
     ");
     $contract_check->execute([$contract_id]);
-    $contract = $contract_check->fetch();
+    $contract = $contract_check->fetch(PDO::FETCH_ASSOC);
     
     if (!$contract) {
         throw new Exception('Contract not found.', 404);
@@ -58,7 +59,27 @@ try {
         $delete_staff_stmt->execute([$contract_id]);
     }
     
-    // Step 2: Delete the contract itself
+    // Step 2: Delete associated contract documents from the filesystem
+    $docs_to_delete = array_filter([
+        $contract['fssai_image'],
+        $contract['fire_safety_image'],
+        $contract['pest_control_image'],
+        $contract['water_safety_image']
+    ]);
+    
+    $deleted_docs_count = 0;
+    $upload_dir = __DIR__ . '/../../../public/uploads/contracts/';
+
+    foreach ($docs_to_delete as $doc_filename) {
+        $file_path = $upload_dir . $doc_filename;
+        if (!empty($doc_filename) && file_exists($file_path)) {
+            if (unlink($file_path)) {
+                $deleted_docs_count++;
+            }
+        }
+    }
+    
+    // Step 3: Delete the contract itself
     $delete_contract_stmt = $pdo->prepare("DELETE FROM contracts WHERE id = ?");
     $delete_contract_stmt->execute([$contract_id]);
     
@@ -67,17 +88,18 @@ try {
     // Log the cascade deletion
     log_activity($pdo, 'CONTRACT_CASCADE_DELETE', [
         'details' => "PERMANENT CASCADE DELETE: Contract '{$contract['contract_name']}' (ID: $contract_id) " .
-                    "under licensee '{$contract['licensee_name']}' and ALL associated staff. " .
-                    "Deleted: $staff_count staff members."
+                    "under licensee '{$contract['licensee_name']}' and ALL associated data. " .
+                    "Deleted: $staff_count staff members and $deleted_docs_count document(s)."
     ]);
     
     echo json_encode([
         'success' => true, 
         'message' => "Contract '{$contract['contract_name']}' and all associated staff has been permanently deleted. " .
-                    "($staff_count staff members)",
+                    "($staff_count staff members, $deleted_docs_count documents)",
         'new_csrf_token' => generate_csrf_token(),
         'deleted_counts' => [
-            'staff' => $staff_count
+            'staff' => $staff_count,
+            'documents' => $deleted_docs_count
         ]
     ]);
 

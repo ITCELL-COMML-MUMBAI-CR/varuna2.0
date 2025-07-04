@@ -62,7 +62,7 @@ try {
     }
 
     // Add date fields
-    $date_fields = ['police_issue_date', 'police_expiry_date', 'medical_issue_date', 'medical_expiry_date'];
+    $date_fields = ['police_issue_date', 'police_expiry_date', 'medical_issue_date', 'medical_expiry_date', 'ta_expiry_date'];
     foreach ($date_fields as $field) {
         if (isset($_POST[$field])) {
             $sql_parts[] = "`$field` = :$field";

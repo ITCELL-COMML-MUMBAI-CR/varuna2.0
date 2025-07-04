@@ -10,12 +10,13 @@ require_once dirname(__DIR__) . '/../init.php';
 echo "Cron Job: Checking for expired staff documents...\n";
 
 try {
-    // Find all approved staff whose police or medical certs have expired.
+    // Find all approved staff whose police, medical, or TA documents have expired.
     $sql = "SELECT id FROM varuna_staff
             WHERE status = 'approved' AND
                   (
                       (police_expiry_date IS NOT NULL AND police_expiry_date < CURDATE()) OR
-                      (medical_expiry_date IS NOT NULL AND medical_expiry_date < CURDATE())
+                      (medical_expiry_date IS NOT NULL AND medical_expiry_date < CURDATE()) OR
+                      (ta_expiry_date IS NOT NULL AND ta_expiry_date < CURDATE())
                   )";
     $stmt = $pdo->query($sql);
     $expired_staff_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);

@@ -103,12 +103,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     (id, contract_id, name, designation, contact, adhar_card_number, adhar_card_image, status,
                      police_image, police_issue_date, police_expiry_date, 
                      medical_image, medical_issue_date, medical_expiry_date,
-                     ta_image, ppo_image, profile_image, signature_image) 
+                     ta_image, ta_expiry_date, ppo_image, profile_image, signature_image) 
                 VALUES 
                     (:id, :contract_id, :name, :designation, :contact, :adhar_card_number, :adhar_card_image, :status,
                      :police_image, :police_issue_date, :police_expiry_date,
                      :medical_image, :medical_issue_date, :medical_expiry_date,
-                     :ta_image, :ppo_image, :profile_image, :signature_image)";
+                     :ta_image, :ta_expiry_date, :ppo_image, :profile_image, :signature_image)";
         // =========================================================
         
         $stmt = $pdo->prepare($sql);
@@ -131,6 +131,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             'medical_issue_date' => !empty($_POST['medical_issue_date']) ? $_POST['medical_issue_date'] : null,
             'medical_expiry_date' => !empty($_POST['medical_expiry_date']) ? $_POST['medical_expiry_date'] : null,
             'ta_image' => $uploaded_files['ta_image'] ?? null,
+            'ta_expiry_date' => !empty($_POST['ta_expiry_date']) ? $_POST['ta_expiry_date'] : null,
             'ppo_image' => $uploaded_files['ppo_image'] ?? null,
             'profile_image' => $uploaded_files['profile_image'] ?? null,
             'signature_image' => $uploaded_files['signature_image'] ?? null

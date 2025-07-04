@@ -161,18 +161,22 @@ document.addEventListener("DOMContentLoaded", function () {
         const imageField = `${docInfo.n}_image`;
         const issueDateField = `${docInfo.n}_issue_date`;
         const expiryDateField = `${docInfo.n}_expiry_date`;
-        const hasExpiryField = docKey === "Police" || docKey === "Medical";
+        const hasExpiryField = docKey === "Police" || docKey === "Medical" || docKey === "TA";
+        const hasIssueField = docKey === "Police" || docKey === "Medical";
 
         const currentDocHTML = s[imageField]
           ? `<div class="current-doc-link">Current: <a href="${BASE_URL}uploads/staff/${s[imageField]}" target="_blank">View File</a></div>`
           : '<div class="current-doc-link">No file uploaded.</div>';
 
-        const docFieldHTML = `
+        let docFieldHTML = `
                 <div class="input-group grid-full-width">
                     <label>${docInfo.l} Image</label>
                     ${currentDocHTML}
                     <input type="file" name="${imageField}" accept="image/*">
-                </div>
+                </div>`;
+
+        if (hasIssueField) {
+          docFieldHTML += `
                 <div class="input-group">
                     <label>${docInfo.l} Issue Date</label>
                     <div class="date-input-wrapper">
@@ -180,21 +184,24 @@ document.addEventListener("DOMContentLoaded", function () {
           s[issueDateField] || ""
         }">
                     </div>
-                </div>
-                ${
-                  hasExpiryField
-                    ? `
+                </div>`;
+        }
+
+        if (hasExpiryField) {
+          docFieldHTML += `
                 <div class="input-group">
                     <label>${docInfo.l} Expiry Date</label>
                     <div class="date-input-wrapper">
                         <input type="date" id="${expiryDateField}" name="${expiryDateField}" value="${
                         s[expiryDateField] || ""
-                      }" readonly>
+                      }" ${hasIssueField ? 'readonly' : ''}>
                     </div>
-                </div>`
-                    : '<div class="input-group"></div>'
-                }
-            `;
+                </div>`;
+        }
+
+        if (!hasIssueField && !hasExpiryField) {
+          docFieldHTML += `<div class="input-group"></div>`;
+        }
         editDocFieldsContainer.insertAdjacentHTML("beforeend", docFieldHTML);
       }
     }
