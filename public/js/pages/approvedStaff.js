@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         <a href="${printUrl}" target="_blank" class="btn-action view" title="Print ID Card">🖨️</a>
                         <button class="btn-action edit" title="Edit Staff" data-staff-id="${data}">✏️</button>
                         <button class="btn-action terminate" title="Terminate Staff" data-staff-id="${data}">⏻</button>
-                        <button class="btn-action reject" title="Delete Staff" data-staff-id="${data}">🗑️</button>
+                        
                     `;
         },
       },
@@ -212,37 +212,7 @@ document.addEventListener("DOMContentLoaded", function () {
     showEditModal($(this).data("staff-id"));
   });
 
-  tableElement.on("click", ".btn-action.reject", function () {
-    const staffId = $(this).data("staff-id");
-    Swal.fire({
-      title: "Are you sure?",
-      text: `You are about to permanently delete staff member ${staffId}. This cannot be undone!`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, delete it!",
-      confirmButtonColor: "#d9534f",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        const formData = new FormData();
-        formData.append("staff_id", staffId);
-        formData.append("csrf_token", csrfToken);
-        fetch(`${BASE_URL}api/delete_staff.php`, {
-          method: "POST",
-          body: formData,
-        })
-          .then((res) => res.json())
-          .then((response) => {
-            refreshToken(response.new_csrf_token);
-            if (response.success) {
-              Swal.fire("Deleted!", response.message, "success");
-              approvedTable.ajax.reload(null, false);
-            } else {
-              Swal.fire("Error!", response.message, "error");
-            }
-          });
-      }
-    });
-  });
+  
 
   $(document).on("submit", "#editStaffForm", function (e) {
     e.preventDefault();

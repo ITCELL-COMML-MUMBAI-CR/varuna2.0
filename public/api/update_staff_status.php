@@ -49,9 +49,15 @@ if ($new_status === 'rejected' && empty($remark)) {
 try {
     $pdo->beginTransaction();
 
-    // Update staff status
-    $stmt = $pdo->prepare("UPDATE varuna_staff SET status = ? WHERE id = ?");
-    $stmt->execute([$new_status, $staff_id]);
+    // Update staff status and approved_by if approving
+    if ($new_status === 'approved') {
+        $stmt = $pdo->prepare("UPDATE varuna_staff SET status = ?, approved_by = ? WHERE id = ?");
+        $stmt->execute([$new_status, $user_id, $staff_id]);
+    } else {
+        // For rejection, only update status (don't change approved_by)
+        $stmt = $pdo->prepare("UPDATE varuna_staff SET status = ? WHERE id = ?");
+        $stmt->execute([$new_status, $staff_id]);
+    }
 
     $log_details = "Staff ID $staff_id status updated to $new_status by $username.";
 

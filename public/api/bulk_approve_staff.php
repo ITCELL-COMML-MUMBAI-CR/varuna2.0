@@ -46,9 +46,10 @@ try {
     // Create the correct number of placeholders for the IN clause
     $placeholders = implode(',', array_fill(0, count($sanitized_ids), '?'));
     
-    // Update staff status to 'approved'
-    $update_stmt = $pdo->prepare("UPDATE varuna_staff SET status = 'approved' WHERE id IN ($placeholders)");
-    $update_stmt->execute($sanitized_ids);
+    // Update staff status to 'approved' and set approved_by
+    $update_stmt = $pdo->prepare("UPDATE varuna_staff SET status = 'approved', approved_by = ? WHERE id IN ($placeholders)");
+    $update_params = array_merge([$_SESSION['user_id']], $sanitized_ids);
+    $update_stmt->execute($update_params);
     
     $affected_rows = $update_stmt->rowCount();
 
