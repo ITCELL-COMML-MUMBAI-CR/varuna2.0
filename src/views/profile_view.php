@@ -88,7 +88,7 @@ $current_signature = $stmt->fetchColumn();
             <?php endif; ?>
 
             <form action="<?php echo BASE_URL; ?>profile/upload_signature" method="POST" enctype="multipart/form-data" style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
-                <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
+                <input type="hidden" name="csrf_token" value="">
                 <div class="input-group">
                     <label style="font-weight: 500;">
                         <i class="fas fa-upload" style="margin-right: 8px; color: var(--primary-color);"></i>
@@ -109,6 +109,46 @@ $current_signature = $stmt->fetchColumn();
                     <?php echo $current_signature ? 'Update' : 'Upload'; ?> Signature
                 </button>
             </form>
+        </div>
+
+        <!-- Change Password Card -->
+        <div class="dashboard-card">
+            <h3 style="color: var(--primary-color); margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-key"></i>
+                Change Password
+            </h3>
+            <form id="changePasswordForm">
+                <div class="input-group" style="margin-bottom: 15px;">
+                    <label for="current_password" style="font-weight: 500;">Current Password</label>
+                    <input type="password" id="current_password" name="current_password" required>
+                </div>
+                <div class="input-group" style="margin-bottom: 15px;">
+                    <label for="new_password" style="font-weight: 500;">New Password</label>
+                    <input type="password" id="new_password" name="new_password" required>
+                </div>
+                <div class="input-group" style="margin-bottom: 20px;">
+                    <label for="confirm_password" style="font-weight: 500;">Confirm New Password</label>
+                    <input type="password" id="confirm_password" name="confirm_password" required>
+                </div>
+                <button type="submit" class="btn-login" style="width: 100%;">
+                    <i class="fas fa-save" style="margin-right: 8px;"></i>
+                    Update Password
+                </button>
+            </form>
+        </div>
+
+        <!-- Password Policy Card -->
+        <div class="dashboard-card">
+             <h3 style="color: var(--primary-color); margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-lightbulb"></i>
+                Password Policy
+            </h3>
+            <div style="background: #e3f2fd; border-left: 4px solid #2196f3; padding: 15px; border-radius: 4px;">
+                 <p style="margin: 0; color: #1565c0;">
+                    <i class="fas fa-info-circle" style="margin-right: 8px;"></i>
+                    <strong>Security:</strong> Use a strong, unique password to protect your account. Minimum 8 characters.
+                </p>
+            </div>
         </div>
     </div>
 
@@ -156,7 +196,7 @@ function confirmDeleteSignature() {
             const csrfToken = document.createElement('input');
             csrfToken.type = 'hidden';
             csrfToken.name = 'csrf_token';
-            csrfToken.value = '<?php echo generate_csrf_token(); ?>';
+            csrfToken.value = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
             
             form.appendChild(csrfToken);
             document.body.appendChild(form);
@@ -164,6 +204,76 @@ function confirmDeleteSignature() {
         }
     });
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    // Set token for upload form
+    const uploadForm = document.querySelector('form[action*="upload_signature"]');
+    if (uploadForm) {
+        uploadForm.querySelector('input[name="csrf_token"]').value = csrfToken;
+    }
+
+    const changePasswordForm = document.getElementById('changePasswordForm');
+    if (changePasswordForm) {
+        changePasswordForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const currentPassword = document.getElementById('current_password').value;
+            const newPassword = document.getElementById('new_password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+        
+            if (newPassword !== confirmPassword) {
+                Swal.fire('Error', 'New password and confirm password do not match.', 'error');
+                return;
+            }
+        
+            if (newPassword.length < 6) {
+                Swal.fire('Error', 'New password must be at least 6 characters long.', 'error');
+                return;
+            }
+        
+            const formData = new FormData();
+            formData.append('current_password', currentPassword);
+            formData.append('new_password', newPassword);
+            formData.append('csrf_token', csrfToken);
+        
+            fetch('<?php echo BASE_URL; ?>api/change_own_password.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Update CSRF token if provided
+                if (data.new_csrf_token) {
+                    document.querySelector('meta[name="csrf-token"]').setAttribute('content', data.new_csrf_token);
+                    // Update upload form token
+                    const uploadForm = document.querySelector('form[action*="upload_signature"]');
+                    if (uploadForm) {
+                        uploadForm.querySelector('input[name="csrf_token"]').value = data.new_csrf_token;
+                    }
+                }
+                
+                if (data.success) {
+                    Swal.fire('Success', data.message, 'success').then(() => {
+                        if (data.logout && data.redirect_url) {
+                            // Redirect to login page after logout
+                            window.location.href = data.redirect_url;
+                        } else {
+                            document.getElementById('changePasswordForm').reset();
+                        }
+                    });
+                } else {
+                    Swal.fire('Error', data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire('Error', 'An unexpected error occurred. Please try again.', 'error');
+            });
+        });
+    }
+});
 </script>
 
 <?php include __DIR__ . '/partials/toasts.php'; ?>

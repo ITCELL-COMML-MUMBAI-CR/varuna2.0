@@ -22,6 +22,30 @@ require_once __DIR__ . '/core/functions.php';
 require_once __DIR__ . '/core/database.php';
 require_once __DIR__ . '/core/qr_generator.php'; // QR Code functions
 
+// 2.1 AUTLOAD VARUNA NAMESPACE CLASSES
+spl_autoload_register(function ($class) {
+    // Only handle classes in the Varuna namespace
+    $prefix = 'Varuna\\';
+    $base_dir = PROJECT_ROOT . '/src/';
+
+    // Does the class use the namespace prefix?
+    $len = strlen($prefix);
+    if (strncmp($prefix, $class, $len) !== 0) {
+        return; // not our namespace
+    }
+
+    // Get the relative class name
+    $relative_class = substr($class, $len);
+
+    // Replace namespace separators with directory separators, append .php
+    $file = $base_dir . str_replace('\\', '/', $relative_class) . '.php';
+
+    // If the file exists, require it
+    if (file_exists($file)) {
+        require_once $file;
+    }
+});
+
 
 // 3. START THE SESSION
 start_secure_session();
