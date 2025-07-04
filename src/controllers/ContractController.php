@@ -105,7 +105,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     try {
         $data = [
             'licensee_id' => $_POST['licensee_id'],
-            'section_code' => ($type_info && $type_info['TrainStation'] === 'Station') ? $_POST['section_code'] : null,
+            'section_code' => ($type_info && $type_info['TrainStation'] === 'Train') ? 'TRAIN' : $_POST['section_code'],
             'station_code' => $stationCodeValue,
             'contract_name' => $_POST['contract_name'],
             'contract_type' => $_POST['contract_type'],

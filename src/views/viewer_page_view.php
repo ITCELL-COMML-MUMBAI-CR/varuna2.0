@@ -6,18 +6,108 @@ if (!defined('VARUNA_ENTRY_POINT') || !in_array($_SESSION['role'], ['ADMIN', 'VI
 
 // Fetch filter data based on user role
 $user_role = $_SESSION['role'];
-$user_designation = $_SESSION['designation'] ?? ''; // Assuming designation is stored in session
+$user_designation = $_SESSION['designation'] ?? '';
+$geo_section = $_SESSION['section'] ?? null;
+$dept_section = $_SESSION['department_section'] ?? null;
 
 $licensees = $contracts = $stations = $sections = [];
 $show_licensee_contract_filters = ($user_designation !== 'ASC');
 
-if ($user_role === 'ADMIN' || $show_licensee_contract_filters) {
-    $licensees = $pdo->query("SELECT id, name FROM varuna_licensee ORDER BY name ASC")->fetchAll();
-    $contracts = $pdo->query("SELECT id, contract_name FROM contracts ORDER BY contract_name ASC")->fetchAll();
+// Viewers can see all data (no filtering)
+if ($user_role === 'VIEWER') {
+    if ($show_licensee_contract_filters) {
+        $licensees = $pdo->query("SELECT id, name FROM varuna_licensee WHERE status = 'active' ORDER BY name ASC")->fetchAll();
+        $contracts = $pdo->query("SELECT id, contract_name FROM contracts WHERE status = 'Active' ORDER BY contract_name ASC")->fetchAll();
+    }
+    $stations = $pdo->query("SELECT DISTINCT station_code FROM contracts WHERE station_code IS NOT NULL AND station_code != '' AND station_code NOT LIKE '%,%' ORDER BY station_code ASC")->fetchAll(PDO::FETCH_COLUMN);
+    $sections = $pdo->query("SELECT Section_Code, Name FROM Section ORDER BY Name ASC")->fetchAll();
 }
-// All roles can see station and section filters
-$stations = $pdo->query("SELECT DISTINCT station_code FROM contracts WHERE station_code IS NOT NULL AND station_code != '' ORDER BY station_code ASC")->fetchAll(PDO::FETCH_COLUMN);
-$sections = $pdo->query("SELECT Section_Code, Name FROM Section ORDER BY Name ASC")->fetchAll();
+// IT CELL admins can see all data (no filtering) 
+elseif ($user_role === 'ADMIN' && $geo_section === 'IT CELL') {
+    if ($show_licensee_contract_filters) {
+        $licensees = $pdo->query("SELECT id, name FROM varuna_licensee WHERE status = 'active' ORDER BY name ASC")->fetchAll();
+        $contracts = $pdo->query("SELECT id, contract_name FROM contracts WHERE status = 'Active' ORDER BY contract_name ASC")->fetchAll();
+    }
+    $stations = $pdo->query("SELECT DISTINCT station_code FROM contracts WHERE station_code IS NOT NULL AND station_code != '' AND station_code NOT LIKE '%,%' ORDER BY station_code ASC")->fetchAll(PDO::FETCH_COLUMN);
+    $sections = $pdo->query("SELECT Section_Code, Name FROM Section ORDER BY Name ASC")->fetchAll();
+}
+// SCIs and non-IT CELL admins see filtered options
+elseif ($user_role === 'SCI' || ($user_role === 'ADMIN' && $geo_section !== 'IT CELL')) {
+    $where_clause = '';
+    $params = [];
+
+    // Handle CCI CP users - they get access to both TRAIN section and their department section
+    if ($user_designation === 'CCI CP') {
+        $conditions = ["c.section_code = 'TRAIN'"]; // Default access to TRAIN section
+        if (!empty($dept_section)) {
+            $conditions[] = "c.contract_type IN (SELECT vct.ContractType FROM varuna_contract_types vct WHERE vct.Section = ?)";
+            $params[] = $dept_section;
+        }
+        $where_clause = "(" . implode(" OR ", $conditions) . ")";
+    }
+    // Regular users with geographical section
+    elseif ($geo_section) {
+        $where_clause = "c.section_code = ?";
+        $params[] = $geo_section;
+    } 
+    // Users with department section only
+    elseif ($dept_section) {
+        $where_clause = "c.contract_type IN (SELECT vct.ContractType FROM varuna_contract_types vct WHERE vct.Section = ?)";
+        $params[] = $dept_section;
+    }
+
+    if (!empty($where_clause) && $show_licensee_contract_filters) {
+        // Fetch contracts relevant to the user's section
+        $contracts_sql = "SELECT id, contract_name FROM contracts c WHERE c.status = 'Active' AND $where_clause ORDER BY c.contract_name ASC";
+        $stmt = $pdo->prepare($contracts_sql);
+        $stmt->execute($params);
+        $contracts = $stmt->fetchAll();
+        
+        // Fetch licensees who have contracts in the user's section
+        $licensees_sql = "SELECT DISTINCT l.id, l.name FROM varuna_licensee l JOIN contracts c ON l.id = c.licensee_id WHERE l.status = 'active' AND $where_clause ORDER BY l.name ASC";
+        $stmt = $pdo->prepare($licensees_sql);
+        $stmt->execute($params);
+        $licensees = $stmt->fetchAll();
+    }
+    
+    // Fetch stations regardless of licensee/contract filters
+    if (!empty($where_clause)) {
+        // Fetch distinct stations from the relevant contracts
+        $stations_sql = "SELECT DISTINCT c.station_code FROM contracts c WHERE c.station_code IS NOT NULL AND c.station_code != '' AND c.station_code NOT LIKE '%,%' AND $where_clause ORDER BY c.station_code ASC";
+        $stmt = $pdo->prepare($stations_sql);
+        $stmt->execute($params);
+        $stations = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        
+        // Fetch sections based on user type
+        if ($user_designation === 'CCI CP') {
+            // CCI CP users see both TRAIN and their department section
+            $section_conditions = ["Section_Code = 'TRAIN'"];
+            $section_params = [];
+            if (!empty($dept_section)) {
+                $section_conditions[] = "Section_Code = ?";
+                $section_params[] = $dept_section;
+            }
+            $sections_sql = "SELECT Section_Code, Name FROM Section WHERE " . implode(" OR ", $section_conditions) . " ORDER BY Name ASC";
+            $stmt = $pdo->prepare($sections_sql);
+            $stmt->execute($section_params);
+            $sections = $stmt->fetchAll();
+        } elseif ($geo_section) {
+            $sections_sql = "SELECT Section_Code, Name FROM Section WHERE Section_Code = ? ORDER BY Name ASC";
+            $stmt = $pdo->prepare($sections_sql);
+            $stmt->execute([$geo_section]);
+            $sections = $stmt->fetchAll();
+        } elseif ($dept_section) {
+            // For departmental users, show their department section if it exists in Section table
+            $sections_sql = "SELECT Section_Code, Name FROM Section WHERE Section_Code = ? ORDER BY Name ASC";
+            $stmt = $pdo->prepare($sections_sql);
+            $stmt->execute([$dept_section]);
+            $sections = $stmt->fetchAll();
+        }
+    } else {
+        // If no section assigned, show no data
+        $licensees = $contracts = $stations = $sections = [];
+    }
+}
 ?>
 <?php include __DIR__ . '/header.php'; ?>
 <!-- Add PDFMake Library for PDF export -->
