@@ -74,8 +74,15 @@ function is_active($slug, $current_page) {
         </ul>
         <?php if (isset($_SESSION['user_id'])): ?>
             <div class="navbar-user-section">
-                <a href="<?php echo BASE_URL; ?>profile" class="nav-username">Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?></a>
-                <a href="<?php echo BASE_URL; ?>logout" class="nav-link-logout">Logout</a>
+                <a href="<?php echo BASE_URL; ?>profile" class="nav-username" title="Click to view your profile and manage settings">
+                    <i class="fas fa-user-circle" style="margin-right: 8px; font-size: 1.1em;"></i>
+                    <span>Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?></span>
+                    <i class="fas fa-cog" style="margin-left: 8px; opacity: 0.7; font-size: 0.9em;"></i>
+                </a>
+                <a href="<?php echo BASE_URL; ?>logout" class="nav-link-logout">
+                    <i class="fas fa-sign-out-alt" style="margin-right: 5px;"></i>
+                    Logout
+                </a>
             </div>
         <?php endif; ?>
     </div>

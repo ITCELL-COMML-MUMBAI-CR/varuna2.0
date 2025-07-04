@@ -142,7 +142,12 @@ document.addEventListener("DOMContentLoaded", function () {
         {
           data: null,
           orderable: false,
-          defaultContent: `<button class="btn-action view" title="View Details">View</button>`,
+          render: function(data, type, row) {
+            return `
+              <button class="btn-action view" title="View Details">View</button>
+              <button class="btn-action reject" data-staff-id="${row.id}" title="Delete Staff">🗑️ Delete</button>
+            `;
+          }
         },
       ],
       "order": [[ 1, 'asc' ]]
@@ -191,8 +196,8 @@ document.addEventListener("DOMContentLoaded", function () {
           orderable: false,
           render: function(data, type, row) {
             return `
-              <button class="btn-action edit" data-staff-id="${data}" title="Edit and Resubmit">✏️</button>
-              <button class="btn-action reject" data-staff-id="${data}" title="Delete Staff">🗑️</button>
+              <button class="btn-action edit" data-staff-id="${data}" title="Edit and Resubmit">✏️ Edit to Re-approve</button>
+              <button class="btn-action reject" data-staff-id="${data}" title="Delete Staff">🗑️ Delete</button>
             `;
           }
         },
@@ -320,6 +325,47 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (response.success) {
                         Swal.fire("Deleted!", response.message, "success");
                         terminatedTable.ajax.reload(null, false);
+                    } else {
+                        Swal.fire("Error!", response.message, "error");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    Swal.fire("Error!", "An error occurred while deleting the staff member.", "error");
+                });
+            }
+        });
+    });
+
+    // Add click handler for delete button in pending staff table
+    $("#pending_staff_table tbody").on("click", "button.reject", function() {
+        const staffId = $(this).data("staff-id");
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute("content");
+
+        Swal.fire({
+            title: "Delete Staff Member?",
+            text: "This will permanently delete this staff member. This action cannot be undone!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Yes, delete!",
+            confirmButtonColor: "#d9534f",
+            cancelButtonText: "Cancel"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const formData = new FormData();
+                formData.append("staff_id", staffId);
+                formData.append("csrf_token", csrfToken);
+
+                fetch(`${BASE_URL}api/delete_staff.php`, {
+                    method: "POST",
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(response => {
+                    refreshToken(response.new_csrf_token);
+                    if (response.success) {
+                        Swal.fire("Deleted!", response.message, "success");
+                        pendingTable.ajax.reload(null, false);
                     } else {
                         Swal.fire("Error!", response.message, "error");
                     }

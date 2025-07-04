@@ -42,6 +42,7 @@ switch ($request_uri) {
     case 'viewer': require_once __DIR__ . '/../src/views/viewer_page_view.php'; break;
     case 'profile': check_permission(['ADMIN', 'SCI', 'VIEWER']); require_once __DIR__ . '/../src/views/profile_view.php'; break;
     case 'profile/upload_signature': check_permission(['ADMIN', 'SCI', 'VIEWER']); require_once __DIR__ . '/../src/controllers/ProfileController.php'; break;
+    case 'profile/delete_signature': check_permission(['ADMIN', 'SCI', 'VIEWER']); require_once __DIR__ . '/../src/controllers/ProfileController.php'; break;
     case 'portal': require_once __DIR__ . '/../src/controllers/PortalController.php'; break;
     
     // SCI and Admin only

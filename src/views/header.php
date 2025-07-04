@@ -8,6 +8,9 @@
     
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/style.css">
     
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <link rel="stylesheet" type="text/css" href="<?php echo BASE_URL; ?>libs/datatables/datatables.min.css"/>
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>libs/sweetalert2/sweetalert2.min.css">
     <link href="<?php echo BASE_URL; ?>libs/select2/select2.min.css" rel="stylesheet" />

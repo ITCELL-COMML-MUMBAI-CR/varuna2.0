@@ -17,7 +17,7 @@ try {
         throw new Exception('Staff ID is required.', 400);
     }
 
-    // First check if the staff is terminated
+    // Check if the staff exists and get their status
     $check_stmt = $pdo->prepare("SELECT status FROM varuna_staff WHERE id = ?");
     $check_stmt->execute([$staff_id]);
     $staff = $check_stmt->fetch();
@@ -26,8 +26,9 @@ try {
         throw new Exception('Staff not found.', 404);
     }
 
-    if ($staff['status'] !== 'terminated') {
-        throw new Exception('Only terminated staff can be deleted.', 400);
+    // Allow deletion of both pending and terminated staff
+    if (!in_array($staff['status'], ['pending', 'terminated'])) {
+        throw new Exception('Only pending or terminated staff can be deleted.', 400);
     }
 
     // Delete the staff member

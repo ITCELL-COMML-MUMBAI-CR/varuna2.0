@@ -35,8 +35,14 @@ document.addEventListener("DOMContentLoaded", function () {
   function renderActions(row, tableInfo) {
     const id = row[tableInfo.id_column];
     let buttons = `<button class="btn-action edit" title="Edit" data-id="${id}" data-table="${tableInfo.name}" data-id-col="${tableInfo.id_column}">✏️</button>
-    <button class="btn-action terminate" title="Terminate" data-id="${id}" data-table="${tableInfo.name}">⏻</button>               
-    <button class="btn-action reject" title="Delete" data-id="${id}" data-table="${tableInfo.name}" data-id-col="${tableInfo.id_column}">🗑️</button>`;
+    <button class="btn-action terminate" title="Terminate" data-id="${id}" data-table="${tableInfo.name}">⏻</button>`;
+
+    // For licensees and contracts, show a "cascade delete" button. For others, a simple "delete".
+    if (tableInfo.name === 'varuna_licensee' || tableInfo.name === 'contracts') {
+      buttons += ` <button class="btn-action cascade-delete" title="Permanent Cascade Delete" data-id="${id}" data-table="${tableInfo.name}">🔥</button>`;
+    } else {
+      buttons += ` <button class="btn-action reject" title="Delete" data-id="${id}" data-table="${tableInfo.name}" data-id-col="${tableInfo.id_column}">🗑️</button>`;
+    }
 
     // Only add the "Generate Link" button for the licensees table
     if (tableInfo.name === "varuna_licensee") {
@@ -518,6 +524,158 @@ $('.page-container').on('click', '.btn-action.terminate', function() {
       editModalBody.innerHTML = `<p style="color:red;">Failed to load documents.</p>`;
     }
   });
+
+  // Handle Cascade Delete Button Clicks for Licensees and Contracts
+  $('.page-container').on('click', '.btn-action.cascade-delete', function() {
+    const id = $(this).data('id');
+    const table = $(this).data('table');
+    const type = table === 'contracts' ? 'contract' : 'licensee';
+    
+    // First, get the counts of what will be deleted
+    fetch(`${BASE_URL}api/admin/get_cascade_delete_counts.php?type=${type}&id=${encodeURIComponent(id)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!data.success) {
+          Swal.fire('Error!', data.message, 'error');
+          return;
+        }
+        
+        const info = data.data;
+        let warningText = '';
+        let countsText = '';
+        
+        if (type === 'licensee') {
+          warningText = `You are about to PERMANENTLY DELETE the licensee "${info.name}" and ALL associated data.`;
+          countsText = `This will delete:\n• ${info.contracts} contract(s)\n• ${info.staff} staff member(s)`;
+        } else {
+          warningText = `You are about to PERMANENTLY DELETE the contract "${info.name}" under licensee "${info.licensee_name}" and ALL associated data.`;
+          countsText = `This will delete:\n• ${info.staff} staff member(s)`;
+        }
+        
+        // Generate random confirmation phrase
+        const phrases = [
+          'DELETE EVERYTHING PERMANENTLY PERMANENT REMOVAL AUTHORIZED'
+        ];
+        const confirmationPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+        
+        showCascadeDeleteConfirmation(id, type, warningText, countsText, confirmationPhrase);
+      })
+      .catch(err => {
+        console.error(err);
+        Swal.fire('Error!', 'Failed to get deletion information.', 'error');
+      });
+  });
+
+  function showCascadeDeleteConfirmation(id, type, warningText, countsText, confirmationPhrase) {
+    const title = type === 'licensee' ? 'Delete Licensee & All Data' : 'Delete Contract & All Staff';
+    
+    Swal.fire({
+      title: title,
+      html: `
+        <div style="text-align: left; margin-bottom: 20px;">
+          <p style="color: #dc3545; font-weight: bold; margin-bottom: 15px;">${warningText}</p>
+          <p style="margin-bottom: 15px; white-space: pre-line;">${countsText}</p>
+          <p style="color: #dc3545; font-weight: bold; margin-bottom: 15px;">⚠️ THIS ACTION CANNOT BE UNDONE! ⚠️</p>
+          <p style="margin-bottom: 10px;">To confirm this permanent deletion, type the following phrase exactly:</p>
+          <div style="background: #f8f9fa; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px; font-family: monospace; font-weight: bold; text-align: center; margin-bottom: 15px; user-select: none;">${confirmationPhrase}</div>
+        </div>
+        <input type="text" id="confirmationInput" class="swal2-input" placeholder="Type the confirmation phrase here..." style="margin-top: 0;" />
+      `,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'DELETE PERMANENTLY',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      preConfirm: () => {
+        const input = document.getElementById('confirmationInput');
+        const typedPhrase = input.value.trim();
+        
+        if (typedPhrase !== confirmationPhrase) {
+          Swal.showValidationMessage('Confirmation phrase does not match. Please type it exactly as shown.');
+          return false;
+        }
+        
+        return { phrase: typedPhrase };
+      },
+      didOpen: () => {
+        const input = document.getElementById('confirmationInput');
+        
+        // Prevent copy-paste operations
+        input.addEventListener('paste', function(e) {
+          e.preventDefault();
+          Swal.showValidationMessage('Copy-paste is not allowed. You must type the confirmation phrase manually.');
+        });
+        
+        input.addEventListener('contextmenu', function(e) {
+          e.preventDefault();
+        });
+        
+        // Focus the input
+        input.focus();
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        executeCascadeDelete(id, type, confirmationPhrase);
+      }
+    });
+  }
+
+  function executeCascadeDelete(id, type, confirmationPhrase) {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const apiUrl = `${BASE_URL}api/admin/delete_${type}_cascade.php`;
+    
+    const formData = new FormData();
+    formData.append(`${type}_id`, id);
+    formData.append('confirmation_phrase', confirmationPhrase);
+    formData.append('expected_phrase', confirmationPhrase);
+    formData.append('csrf_token', csrfToken);
+    
+    // Show loading
+    Swal.fire({
+      title: 'Deleting...',
+      text: 'Please wait while we permanently delete all records.',
+      icon: 'info',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+    
+    fetch(apiUrl, { 
+      method: 'POST', 
+      body: formData 
+    })
+    .then(res => res.json())
+    .then(data => {
+      refreshToken(data.new_csrf_token);
+      
+      if (data.success) {
+        Swal.fire({
+          title: 'Deleted!',
+          text: data.message,
+          icon: 'success',
+          confirmButtonColor: '#28a745'
+        });
+        
+        // Reload all tables
+        for (const key in tables) {
+          if (tables[key] && $.fn.DataTable.isDataTable(tables[key])) {
+            tables[key].ajax.reload(null, false);
+          }
+        }
+      } else {
+        Swal.fire('Error!', data.message, 'error');
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      Swal.fire('Error!', 'An unexpected error occurred during deletion.', 'error');
+    });
+  }
 
   // Close Modal Logic
   editModal.addEventListener("click", function (e) {
