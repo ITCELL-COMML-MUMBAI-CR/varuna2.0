@@ -45,7 +45,7 @@ try {
 
     // Insert the new token into the database.
     $stmt = $pdo->prepare(
-        "INSERT INTO varuna_access_tokens (licensee_id, token, expires_at, created_by_user_id) VALUES (?, ?, ?, ?)"
+        "INSERT INTO varuna_access_tokens (licensee_id, token, expires_at, created_by_user_id, created_at) VALUES (?, ?, ?, ?, now())"
     );
     $stmt->execute([$licensee_id, $token, $expires_at, $_SESSION['user_id']]);
     

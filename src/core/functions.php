@@ -7,7 +7,7 @@
  * @param array $logData Associative array with log data (user_id, username, details).
  */
 function log_activity($pdo, $action, $logData = []) {
-    $sql = "INSERT INTO varuna_activity_log (user_id, username, action, details, ip_address) VALUES (:user_id, :username, :action, :details, :ip_address)";
+    $sql = "INSERT INTO varuna_activity_log (user_id, username, action, details, ip_address, timestamp) VALUES (:user_id, :username, :action, :details, :ip_address, now())";
     
     $stmt = $pdo->prepare($sql);
 
