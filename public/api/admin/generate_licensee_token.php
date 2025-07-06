@@ -50,7 +50,7 @@ try {
     $stmt->execute([$licensee_id, $token, $expires_at, $_SESSION['user_id']]);
     
     // Construct the full link for the SCI to share.
-    $link = APP_ROOT_URL . 'public/portal/?token=' . urlencode($token);
+    $link = APP_ROOT_URL . 'portal/?token=' . urlencode($token);
 
     log_activity($pdo, 'LICENSEE_TOKEN_GENERATE', ['details' => "Generated access link for licensee ID: $licensee_id"]);
     
